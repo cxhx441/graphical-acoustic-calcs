@@ -9,6 +9,8 @@ sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Python Scripts
 import CraigsFunFunctions
 import numpy
 
+#newline
+
 GE_filepath = "PDFXEdit_2020-08-25_19-36-01.png"
 eqmt_overlay_filepath = "PDFXEdit_2020-08-25_19-36-01.png"
 xlsx_file = 'B56 - VRF_Rooftop Amenity Investigation - 2020.08.17.xlsm'
