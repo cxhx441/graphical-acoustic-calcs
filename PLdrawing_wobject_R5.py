@@ -613,7 +613,11 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 print("rcvr", rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
                 print("eqmt", eqmt.x_coord, eqmt.y_coord, eqmt.z_coord)
                 print(sound_power, distance)
-                spl = sound_power-20*math.log10(distance/3.28)-8
+                try:
+                    spl = sound_power-20*math.log10(distance/3.28)-8
+                except ValueError:
+                    print('MATH DOMAIN ERROR OCCURED')
+                    spl = 1000
 
                 sound_pressure += 10**(spl/10)
             rcvr.predicted_sound_level = round(10*math.log10(sound_pressure),1)
