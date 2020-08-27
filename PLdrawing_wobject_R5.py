@@ -632,7 +632,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         print(self.current_receiver)
 
     def onExportListButton(self):
-        wb = openpyxl.load_workbook(XL_FILEPATH, keep_vba=True, data_only=True)
+        wb = openpyxl.load_workbook(XL_FILEPATH, keep_vba=True, data_only=False)
         ws = wb['Input LwA_XYZ']
 
         for obj in self.parent.func_vars.equipment_list:
