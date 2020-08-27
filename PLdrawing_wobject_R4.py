@@ -9,14 +9,68 @@ sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Python Scripts
 import CraigsFunFunctions
 import numpy
 
-class FuncVars(object):
-    def __init__(self):
-        pass
-    pass
+BED_IMAGE_FILEPATH = "PDFXEdit_2020-08-25_19-36-01.png"
+TOP_IMAGE_FILEPATH = "PDFXEdit_2020-08-25_19-36-01.png"
+XL_FILEPATH = 'B56 - VRF_Rooftop Amenity Investigation - 2020.08.17.xlsm'
 
-GE_filepath = "PDFXEdit_2020-08-25_19-36-01.png"
-eqmt_overlay_filepath = "PDFXEdit_2020-08-25_19-36-01.png"
-xlsx_file = 'B56 - VRF_Rooftop Amenity Investigation - 2020.08.17.xlsm'
+class FuncVars(object):
+    def __init__(self, parent):
+        self.parent = parent
+        #open workbook
+        wb = openpyxl.load_workbook(XL_FILEPATH, data_only=True)
+        ws = wb['Input LwA_XYZ']
+
+        #initialize eqmt list
+        self.equipment_list = list()
+        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['J'], ws['K'], ws['L'] ):
+            if count.value == "Number of Units": continue
+            if count.value == None: break
+            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, x_coord.value, y_coord.value, z_coord.value))
+
+        #initialize rcvr list
+        self.receiver_list = list()
+        for r_name, x_coord, y_coord, z_coord, sound_limit in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T']):
+            if r_name.value == "R#": continue
+            if r_name.value == None: break
+            self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
+
+        #initialize master_scale
+        self.old_master_scale = 1.0
+        self.known_distance_ft = ws['U20'].value if ws['U20'].value != None else 1.0
+        self.scale_line_distance_px = ws['V20'].value if ws['V20'].value != None else 1.0
+        self.master_scale = self.known_distance_ft / self.scale_line_distance_px
+
+        # for obj in self.equipment_list:
+        #     print("eqmt: ", obj.sound_level)
+
+
+    def update_master_scale(self, scale_line_distance_px, known_distance_ft):
+        self.scale_line_distance_px = scale_line_distance_px
+        self.known_distance_ft = known_distance_ft
+        self.old_master_scale = self.master_scale
+        self.master_scale = self.known_distance_ft / self.scale_line_distance_px
+
+        '''rescaling eqmt'''
+        for obj in self.equipment_list:
+            obj.x_coord /= self.old_master_scale
+            obj.y_coord /= self.old_master_scale
+            obj.x_coord *= self.master_scale
+            obj.y_coord *= self.master_scale
+            obj.x_coord = round(obj.x_coord, 2)
+            obj.y_coord = round(obj.y_coord, 2)
+
+        for obj in self.receiver_list:
+            obj.x_coord /= self.old_master_scale
+            obj.y_coord /= self.old_master_scale
+            obj.x_coord *= self.master_scale
+            obj.y_coord *= self.master_scale
+            obj.x_coord = round(obj.x_coord, 2)
+            obj.y_coord = round(obj.y_coord, 2)
+        '''rescaling eqmt'''
+
+        self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_eqmt_info.generateRcvrTree()
+        self.parent.pane_eqmt_info.generateEqmtTree()
 
 class Equipment(object):
     def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord):
@@ -40,45 +94,14 @@ class Receiver(object):
         self.sound_limit = sound_limit
         self.predicted_sound_level = predicted_sound_level
 
-class Eqmt_List(object):
-    def __init__(self):
-        # xlsx_file = 'Midtown - PL (revised) - 2020.07.29.xlsm'
-        wb = openpyxl.load_workbook(xlsx_file, data_only=True)
-        ws = wb['Input LwA_XYZ']
-
-        self.equipment_list = list()
-        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['J'], ws['K'], ws['L'] ):
-            if count.value == "Number of Units": continue
-            if count.value == None: break
-            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, x_coord.value, y_coord.value, z_coord.value))
-
-class Rcvr_List(object):
-    def __init__(self):
-        # xlsx_file = 'Midtown - PL (revised) - 2020.07.29.xlsm'
-        wb = openpyxl.load_workbook(xlsx_file, data_only=True)
-        ws = wb['Input LwA_XYZ']
-
-        self.receiver_list = list()
-        for r_name, x_coord, y_coord, z_coord, sound_limit in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T']):
-            if r_name.value == "R#": continue
-            if r_name.value == None: break
-            self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
-
 class Editor(tkinter.Frame):
     def __init__(self, parent):
         tkinter.Frame.__init__(self, parent)
         self.parent = parent
-        #Initialize MasterScale
-        # xlsx_file = 'Midtown - PL (revised) - 2020.07.29.xlsm'
-        wb = openpyxl.load_workbook(xlsx_file, data_only=True)
-        ws = wb['Input LwA_XYZ']
-        self.knownDistanceInImageFeet = ws['U20'].value
-        self.scale_line_distance = ws['V20'].value
-        self.master_scale = self.knownDistanceInImageFeet / self.scale_line_distance
 
         #open image
-        self.image = Image.open(GE_filepath)
-        self.image2 = Image.open(eqmt_overlay_filepath)
+        self.image = Image.open(BED_IMAGE_FILEPATH)
+        self.image2 = Image.open(TOP_IMAGE_FILEPATH)
 
         #image sizing
         self.imageWidth, self.imageHeight = self.image.size
@@ -112,15 +135,6 @@ class Editor(tkinter.Frame):
         image2_y_coord = self.image2.size[1]/2
         self.canvas.create_image(image2_x_coord, image2_y_coord, tag="eqmt_drawing", image=self.tk_image2)
 
-
-        # angle = 15
-        # self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(angle))
-        # self.canvas.create_image(0,0, image=self.tk_image2, tag="eqmt_drawing")
-        # angle = 15
-        # self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(angle))
-        # self.canvas.create_image(0,0, anchor="nw", image=self.tk_image2)
-
-
         '''scroll bar setup'''
         self.vScrollbar = tkinter.Scrollbar(self, orient=tkinter.VERTICAL)
         self.hScrollbar = tkinter.Scrollbar(self, orient=tkinter.HORIZONTAL)
@@ -135,20 +149,20 @@ class Editor(tkinter.Frame):
         '''scroll bar setup'''
 
         '''initialize receivers and equipment boxes'''
-        for eqmt in self.parent.eqmt_list.equipment_list:
+        for eqmt in self.parent.func_vars.equipment_list:
             random_8bit_color = CraigsFunFunctions.random_8bit_color()
             offset = 20
-            x = eqmt.x_coord/self.master_scale
-            y = eqmt.y_coord/self.master_scale
+            x = eqmt.x_coord/self.parent.func_vars.master_scale
+            y = eqmt.y_coord/self.parent.func_vars.master_scale
             # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
             self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=eqmt.eqmt_tag, fill=random_8bit_color, activeoutline='red')
             self.canvas.create_text(x, y, tag=eqmt.eqmt_tag, text=eqmt.eqmt_tag, font=("arial.ttf", 15), fill='Black')
 
-        for rcvr in self.parent.rcvr_list.receiver_list:
+        for rcvr in self.parent.func_vars.receiver_list:
             random_8bit_color = CraigsFunFunctions.random_8bit_color()
             offset = 20
-            x = rcvr.x_coord/self.master_scale
-            y = rcvr.y_coord/self.master_scale
+            x = rcvr.x_coord/self.parent.func_vars.master_scale
+            y = rcvr.y_coord/self.parent.func_vars.master_scale
             # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
             self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=rcvr.r_name, fill=random_8bit_color, activeoutline='red')
             self.canvas.create_text(x, y, tag=rcvr.r_name, text=rcvr.r_name, font=("arial.ttf", 15), fill='Black')
@@ -195,7 +209,7 @@ class Editor(tkinter.Frame):
         return angle
 
     def update_distance_label(self):
-        self.parent.pane_eqmt_info.measuremet_label.configure(text=str(round(self.master_scale*(math.sqrt((self.x0 - self.curX)**2 + (self.y0 - self.curY)**2)),2)) + " ft")
+        self.parent.pane_eqmt_info.measuremet_label.configure(text=str(round(self.parent.func_vars.master_scale*(math.sqrt((self.x0 - self.curX)**2 + (self.y0 - self.curY)**2)),2)) + " ft")
 
     def _on_left_mouseclick(self, event):
         self.x0 = self.canvas.canvasx(event.x)
@@ -217,18 +231,14 @@ class Editor(tkinter.Frame):
 
         elif self.parent.pane_toolbox.drawing_equipment == True:
             self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='red')
-            # self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY) #do i need this?
 
         elif self.parent.pane_toolbox.drawing_receiver == True:
             self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='green')
-            # self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY) #do i need this
 
         elif self.parent.pane_toolbox.rotating_eqmt_drawing == True:
             #calc angle at start point
             self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
             self.angle0 = self.get_angle(self.x0-self.eqmt_drawing_center[0], self.y0-self.eqmt_drawing_center[1]) - self.angle
-            # self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
-            # self.canvas.create_image(self.eqmt_drawing_center[0], self.eqmt_drawing_center[1], image=self.tk_image2, tag="eqmt_drawing")
 
         elif self.parent.pane_toolbox.moving_eqmt_drawing == True:
             self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
@@ -292,6 +302,7 @@ class Editor(tkinter.Frame):
             self.canvas.create_image(self.eqmt_drawing_center[0], self.eqmt_drawing_center[1], image=self.tk_image2, tag="eqmt_drawing")
             self.canvas.tag_lower("eqmt_rdawing")
             self.canvas.tag_lower("bed_layer")
+
         elif self.parent.pane_toolbox.moving_eqmt_drawing == True:
             # self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
             x_shifter = self.curX - self.x0
@@ -321,37 +332,16 @@ class Editor(tkinter.Frame):
 
             self.scale_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="blue", width=5)
             scale_line_coords = self.canvas.coords(self.scale_line)
-            self.scale_line_distance = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
+            # self.parent.func_vars.scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
+            # self.parent.func_vars.known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
+            _scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
+            _known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
+            self.parent.func_vars.update_master_scale(_scale_line_distance_px, _known_distance_ft)
+            # self.parent.func_vars.old_master_scale = self.parent.func_vars.master_scale
+            # self.parent.func_vars.master_scale = self.parent.func_vars.known_distance_ft / self.parent.func_vars.scale_line_distance_px
 
-            self.old_master_scale = self.master_scale
-            self.knownDistanceInImageFeet = float(self.parent.pane_eqmt_info.e1.get())
-            # knownDistanceInImageFeet = self.knownDistanceInImageFeet
-            self.master_scale = self.knownDistanceInImageFeet / self.scale_line_distance
-
-            scaleIndicatorLabelText = "Scale: " + str(round(self.scale_line_distance,0)) + " px = " + str(self.knownDistanceInImageFeet) + " ft"
+            scaleIndicatorLabelText = "Scale: " + str(round(self.parent.func_vars.scale_line_distance_px,0)) + " px = " + str(self.parent.func_vars.known_distance_ft) + " ft"
             self.parent.pane_eqmt_info.scaleIndicatorLabel.configure(text=scaleIndicatorLabelText)
-
-            '''rescaling eqmt'''
-            for obj in self.parent.eqmt_list.equipment_list:
-                obj.x_coord /= self.old_master_scale
-                obj.y_coord /= self.old_master_scale
-                obj.x_coord *= self.master_scale
-                obj.y_coord *= self.master_scale
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
-
-            for obj in self.parent.rcvr_list.receiver_list:
-                obj.x_coord /= self.old_master_scale
-                obj.y_coord /= self.old_master_scale
-                obj.x_coord *= self.master_scale
-                obj.y_coord *= self.master_scale
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
-            '''rescaling eqmt'''
-
-            self.parent.pane_eqmt_info.update_est_noise_levels()
-            self.parent.pane_eqmt_info.generateRcvrTree()
-            self.parent.pane_eqmt_info.generateEqmtTree()
 
         elif self.parent.pane_toolbox.measuring == True:
             self.canvas.delete(self.temp_measure_line)
@@ -370,16 +360,17 @@ class Editor(tkinter.Frame):
 
             self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=eqmt_tag, text=eqmt_tag, font=("arial.ttf", 15), fill='Black')
 
-            for obj in self.parent.eqmt_list.equipment_list:
+            #update this one piece of eqmt
+            for obj in self.parent.func_vars.equipment_list:
                 if obj.eqmt_tag == eqmt_tag:
                     obj.x_coord = self.x0 + (self.curX - self.x0)/2
                     obj.y_coord = self.y0 + (self.curY - self.y0)/2
-                    obj.x_coord *= self.master_scale
-                    obj.y_coord *= self.master_scale
+                    obj.x_coord *= self.parent.func_vars.master_scale
+                    obj.y_coord *= self.parent.func_vars.master_scale
                     obj.x_coord = round(obj.x_coord, 2)
                     obj.y_coord = round(obj.y_coord, 2)
-                    print(obj.x_coord)
-                    print(obj.y_coord)
+                    # print(obj.x_coord)
+                    # print(obj.y_coord)
 
             self.parent.pane_eqmt_info.update_est_noise_levels()
             self.parent.pane_eqmt_info.generateRcvrTree()
@@ -388,8 +379,7 @@ class Editor(tkinter.Frame):
         elif self.parent.pane_toolbox.drawing_receiver == True:
             self.canvas.delete(self.temp_rect)
 
-            random_8bit_color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            random_8bit_color = '#{:02x}{:02x}{:02x}'.format(*random_8bit_color)
+            random_8bit_color = CraigsFunFunctions.random_8bit_color()
 
             r_name=self.parent.pane_eqmt_info.current_receiver[0]
             tagged_objects = self.canvas.find_withtag(r_name)
@@ -399,16 +389,17 @@ class Editor(tkinter.Frame):
 
             self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=r_name, text=r_name, font=("arial.ttf", 15), fill='Black')
 
-            for obj in self.parent.rcvr_list.receiver_list:
+            #update this one rcvr
+            for obj in self.parent.func_vars.receiver_list:
                 if obj.r_name == r_name:
                     obj.x_coord = self.x0 + (self.curX - self.x0)/2
                     obj.y_coord = self.y0 + (self.curY - self.y0)/2
-                    obj.x_coord *= self.master_scale
-                    obj.y_coord *= self.master_scale
+                    obj.x_coord *= self.parent.func_vars.master_scale
+                    obj.y_coord *= self.parent.func_vars.master_scale
                     obj.x_coord = round(obj.x_coord, 2)
                     obj.y_coord = round(obj.y_coord, 2)
-                    print(obj.x_coord)
-                    print(obj.y_coord)
+                    # print(obj.x_coord)
+                    # print(obj.y_coord)
 
             self.parent.pane_eqmt_info.update_est_noise_levels()
             self.parent.pane_eqmt_info.generateRcvrTree()
@@ -446,12 +437,12 @@ class Editor(tkinter.Frame):
             self.curX = self.canvas.canvasx(event.x)
             self.curY = self.canvas.canvasy(event.y)
 
-        for obj in self.parent.eqmt_list.equipment_list:
+        for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_or_rcvr_num:
                 self.obj_x_coord_0 = obj.x_coord
                 self.obj_y_coord_0 = obj.y_coord
 
-        for obj in self.parent.rcvr_list.receiver_list:
+        for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == self.tag_or_rcvr_num:
                 self.obj_x_coord_0 = obj.x_coord
                 self.obj_y_coord_0 = obj.y_coord
@@ -464,25 +455,23 @@ class Editor(tkinter.Frame):
         self.canvas.coords(self.current_rect, self.current_rect_coords[0]+x_shifter, self.current_rect_coords[1]+y_shifter, self.current_rect_coords[2]+x_shifter, self.current_rect_coords[3]+y_shifter)
         self.canvas.coords(self.current_text, self.current_text_coords[0]+x_shifter, self.current_text_coords[1]+y_shifter)
 
-        for obj in self.parent.eqmt_list.equipment_list:
+        for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_or_rcvr_num:
-                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.master_scale
-                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.master_scale
+                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
+                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
-        for obj in self.parent.rcvr_list.receiver_list:
+        for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == self.tag_or_rcvr_num:
-                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.master_scale
-                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.master_scale
+                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
+                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
-
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateEqmtTree()
         self.parent.pane_eqmt_info.generateRcvrTree()
-
 
     def shift_click_release(self, event):
         self.curX = self.canvas.canvasx(event.x)
@@ -492,20 +481,19 @@ class Editor(tkinter.Frame):
         self.canvas.coords(self.current_rect, self.current_rect_coords[0]+x_shifter, self.current_rect_coords[1]+y_shifter, self.current_rect_coords[2]+x_shifter, self.current_rect_coords[3]+y_shifter)
         self.canvas.coords(self.current_text, self.current_text_coords[0]+x_shifter, self.current_text_coords[1]+y_shifter)
 
-        for obj in self.parent.eqmt_list.equipment_list:
+        for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_or_rcvr_num:
-                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.master_scale
-                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.master_scale
+                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
+                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
-        for obj in self.parent.rcvr_list.receiver_list:
+        for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == self.tag_or_rcvr_num:
-                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.master_scale
-                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.master_scale
+                obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
+                obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
-
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateEqmtTree()
@@ -522,7 +510,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.e1.bind("<FocusIn>", self.e1_select_all)
         self.e1.bind("<Return>", self.e1_unfocus)
 
-        scaleIndicatorLabelText = "Scale: " + str(round(self.parent.editor.scale_line_distance,0)) + " px = " + str(self.parent.editor.knownDistanceInImageFeet) + " ft"
+        scaleIndicatorLabelText = "Scale: " + str(round(self.parent.func_vars.scale_line_distance_px,0)) + " px = " + str(self.parent.func_vars.known_distance_ft) + " ft"
 
         self.exportList_button = tkinter.Button(self, text="Export Tag List", command=self.onExportListButton, font=(None, 15))
         self.scaleIndicatorLabel = tkinter.Label(self, text=scaleIndicatorLabelText, borderwidth=2, relief="solid", font=(None, 15))
@@ -548,15 +536,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
     def generateEqmtTree(self):
         try: # delete tree if already exists
             self.equipment_tree.delete(*self.equipment_tree.get_children())
-            # self.equipment_tree_columns = ["count", "eqmt_tag", "path", "make", "model", "sound_level", "sound_ref_dist", "x_coord", "y_coord"]
             self.equipment_tree_rows = []
-            for i in self.parent.eqmt_list.equipment_list:
-                # print([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.x_coord, i.y_coord])
+            for i in self.parent.func_vars.equipment_list:
                 self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.x_coord, i.y_coord, i.z_coord])
 
-            # for col in self.equipment_tree_columns:
-            #     self.equipment_tree.heading(col, text=col)
-            #     self.equipment_tree.column(col, minwidth=20, width=len(col)*10, stretch=0)
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value)
                 if i == len(self.equipment_tree_rows)-1:
@@ -569,9 +552,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
         except:
             self.equipment_tree_columns = ["count", "eqmt_tag", "path", "make", "model", "sound_level", "sound_ref_dist", "x_coord", "y_coord", "z_coord"]
             self.equipment_tree_rows = []
-            for i in self.parent.eqmt_list.equipment_list:
+            for i in self.parent.func_vars.equipment_list:
                 self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.x_coord, i.y_coord, i.z_coord])
-
             self.equipment_tree = tkinter.ttk.Treeview(self, columns=self.equipment_tree_columns, show='headings')
             for col in self.equipment_tree_columns:
                 self.equipment_tree.heading(col, text=col)
@@ -590,10 +572,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
         try: # delete tree if already exists
             self.receiver_tree.delete(*self.receiver_tree.get_children())
             self.receiver_tree_rows = []
-            for i in self.parent.rcvr_list.receiver_list:
-                # print([i.r_name, i.x_coord, i.y_coord, i.sound_limit])
+            for i in self.parent.func_vars.receiver_list:
                 self.receiver_tree_rows.append([i.r_name, i.x_coord, i.y_coord, i.z_coord, i.sound_limit, i.predicted_sound_level])
-
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value)
                 if i == len(self.receiver_tree_rows)-1:
@@ -602,7 +582,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         except:
             self.receiver_tree_columns = ["R#", "x_coord", "y_coord", "z_coord", "sound limit", "est. level"]
             self.receiver_tree_rows = []
-            for i in self.parent.rcvr_list.receiver_list:
+            for i in self.parent.func_vars.receiver_list:
                 self.receiver_tree_rows.append([i.r_name, i.x_coord, i.y_coord, i.z_coord, i.sound_limit, i.predicted_sound_level])
             self.receiver_tree = tkinter.ttk.Treeview(self, columns=self.receiver_tree_columns, show='headings')
             for col in self.receiver_tree_columns:
@@ -618,50 +598,44 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.receiver_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
 
     def update_est_noise_levels(self):
-        for rcvr in self.parent.rcvr_list.receiver_list:
+        for rcvr in self.parent.func_vars.receiver_list:
             sound_pressure = 0
-
-            for eqmt in self.parent.eqmt_list.equipment_list:
-                # sound_power = eqmt.sound_power if eqmt.sound_ref_dist == 0 else sound_power = 10^(eqmt.sound_power+20*math.log10(eqmt.sound_ref_dist/3.28)+8)/10
+            for eqmt in self.parent.func_vars.equipment_list:
                 if eqmt.sound_ref_dist == 0:
                     sound_power = eqmt.sound_level
                 else:
-                    q = 2
+                    q = 2 #need to update this
                     r = eqmt.sound_ref_dist*0.308
                     lp = eqmt.sound_level
                     b = q/(4*math.pi*r**2)
                     sound_power = lp + abs(10*math.log10(b))
                 distance = math.sqrt((rcvr.x_coord-eqmt.x_coord)**2 + (rcvr.y_coord - eqmt.y_coord)**2 + (rcvr.z_coord - eqmt.z_coord)**2)
-                print(sound_power)
+                print("rcvr", rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
+                print("eqmt", eqmt.x_coord, eqmt.y_coord, eqmt.z_coord)
+                print(sound_power, distance)
                 spl = sound_power-20*math.log10(distance/3.28)-8
+
                 sound_pressure += 10**(spl/10)
-
             rcvr.predicted_sound_level = round(10*math.log10(sound_pressure),1)
-
             if rcvr.r_name == "R1":
                 print(f"predicted sound level: {rcvr.predicted_sound_level}")
                 print(f"distance: {distance}")
-            # print(f"predicted sound level: {rcvr.predicted_sound_level}")
-            # print(f"distance: {distance}")
-
 
     def select_item_from_eqmt_tree(self, event):
         self.current_equipment = self.equipment_tree.focus()
-        # print(self.current_equipment.item(child)['values'])
         self.current_euqipment = self.equipment_tree.item(self.current_equipment)['values']
         print(self.current_euqipment)
 
     def select_item_from_rcvr_tree(self, event):
         self.current_receiver = self.receiver_tree.focus()
-        # print(self.current_equipment.item(child)['values'])
         self.current_receiver = self.receiver_tree.item(self.current_receiver)['values']
         print(self.current_receiver)
 
     def onExportListButton(self):
-        wb = openpyxl.load_workbook(xlsx_file, keep_vba=True)
+        wb = openpyxl.load_workbook(XL_FILEPATH, keep_vba=True, data_only=True)
         ws = wb['Input LwA_XYZ']
 
-        for obj in self.parent.eqmt_list.equipment_list:
+        for obj in self.parent.func_vars.equipment_list:
             for row in ws.iter_rows(max_row=100):
                 print("row 1", row[1].value)
                 if row[1].value == None:
@@ -673,7 +647,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[9].value = obj.x_coord
                     row[10].value = obj.y_coord
 
-        for obj in self.parent.rcvr_list.receiver_list:
+        for obj in self.parent.func_vars.receiver_list:
             for row in ws.iter_rows(max_row=100):
                 if row[15].value == None:
                     break
@@ -683,23 +657,13 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[17].value = obj.y_coord
 
         # saving scale
-        print(self.parent.editor.knownDistanceInImageFeet)
-        ws['U20'] = self.parent.editor.knownDistanceInImageFeet
-        print(self.parent.editor.scale_line_distance)
-        ws['V20'] = self.parent.editor.scale_line_distance
+        ws['U20'] = self.parent.func_vars.known_distance_ft
+        ws['V20'] = self.parent.func_vars.scale_line_distance_px
 
         print("saving")
-        wb.save(filename=xlsx_file)
+        wb.save(filename=XL_FILEPATH)
         print("saved")
-# self.equipment_list = list()
-#         for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['J'], ws['K'], ws['L'] ):
-#             if count.value == "Number of Units":
-#                 continue
-#             if count.value == None:
-#                 break
-        # df = pandas.DataFrame(data={"Tag": self.tagList, "X Coordinate": self.xList, "Y Coordinate": self.yList})
-        # df.to_csv("./file.csv", sep=',',index=False)
-        # print("we did it!")
+        # wb.close()
 
     def e1_unfocus(self, event):
         self.status_label.focus()
@@ -721,7 +685,6 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_move_eqmt_drawing = tkinter.Button(self, text="Move Eqmt Drawing", command=self.move_eqmt_drawing, font=(None, 15))
         self.button_resize_eqmt_drawing = tkinter.Button(self, text="Resize Eqmt Drawing", command=self.resize_eqmt_drawing, font=(None, 15))
 
-
         self.button_set_image_scale.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
         self.button_draw_equipment.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
         self.button_draw_receiver.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
@@ -729,9 +692,6 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_rotate_eqmt_drawing.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
         self.button_move_eqmt_drawing.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
         self.button_resize_eqmt_drawing.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
-
-
-
 
     def _setting_other_tools_false(self):
         self.measuring = False
@@ -781,11 +741,7 @@ class Main_Application(tkinter.Frame):
         tkinter.Frame.__init__(self) # , parent
         self.parent = parent
 
-
-
-        self.func_vars = FuncVars()
-        self.eqmt_list = Eqmt_List()
-        self.rcvr_list = Rcvr_List()
+        self.func_vars = FuncVars(self)
         self.editor = Editor(self)
         self.pane_toolbox = Pane_Toolbox(self)
         self.pane_eqmt_info = Pane_Eqmt_Info(self)
@@ -799,9 +755,6 @@ def main():
 
     mainApp = Main_Application(root)
     mainApp.pack(side="top", fill="both", expand=True)
-    # secondaryApp = Secondary_Application(root)
-    # secondaryApp.pack(side="top", fill="both", expand=True)
-
     root.geometry('+0+0') #puts window in top left
     root.mainloop()
 
