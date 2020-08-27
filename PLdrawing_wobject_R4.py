@@ -9,6 +9,11 @@ sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Python Scripts
 import CraigsFunFunctions
 import numpy
 
+class FuncVars(object):
+    def __init__(self):
+        pass
+    pass
+
 GE_filepath = "PDFXEdit_2020-08-25_19-36-01.png"
 eqmt_overlay_filepath = "PDFXEdit_2020-08-25_19-36-01.png"
 xlsx_file = 'B56 - VRF_Rooftop Amenity Investigation - 2020.08.17.xlsm'
@@ -43,11 +48,8 @@ class Eqmt_List(object):
 
         self.equipment_list = list()
         for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['J'], ws['K'], ws['L'] ):
-            if count.value == "Number of Units":
-                continue
-            if count.value == None:
-                break
-
+            if count.value == "Number of Units": continue
+            if count.value == None: break
             self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, x_coord.value, y_coord.value, z_coord.value))
 
 class Rcvr_List(object):
@@ -58,20 +60,14 @@ class Rcvr_List(object):
 
         self.receiver_list = list()
         for r_name, x_coord, y_coord, z_coord, sound_limit in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T']):
-            if r_name.value == "R#":
-                continue
-            if r_name.value == None:
-                break
-            if x_coord.value == None: x_coord.value = 0
-            if y_coord.value == None: y_coord.value = 0
-            if z_coord.value == None: z_coord.value = 0
+            if r_name.value == "R#": continue
+            if r_name.value == None: break
             self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
 
 class Editor(tkinter.Frame):
     def __init__(self, parent):
         tkinter.Frame.__init__(self, parent)
         self.parent = parent
-
         #Initialize MasterScale
         # xlsx_file = 'Midtown - PL (revised) - 2020.07.29.xlsm'
         wb = openpyxl.load_workbook(xlsx_file, data_only=True)
@@ -787,6 +783,7 @@ class Main_Application(tkinter.Frame):
 
 
 
+        self.func_vars = FuncVars()
         self.eqmt_list = Eqmt_List()
         self.rcvr_list = Rcvr_List()
         self.editor = Editor(self)
