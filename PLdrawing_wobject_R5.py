@@ -34,6 +34,15 @@ class FuncVars(object):
             if r_name.value == None: break
             self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
 
+        self.barrier_list = list()
+        for barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T'], ws['U'], ws['V']):
+            if int(barrier_name.coordinate[1:]) < 24: continue
+            # print("printed", int(barrier_name.coordinate[1:]))
+            # print("printed", barrier_name)
+            if barrier_name.value == None: break
+            self.barrier_list.append(Barrier(str(barrier_name.value), x0_coord.value, y0_coord.value, z0_coord.value, x1_coord.value, y1_coord.value, z1_coord.value))
+        # print(self.barrier_list[0].barrier_name)
+
         #initialize master_scale
         self.old_master_scale = 1.0
         self.known_distance_ft = ws['U20'].value if ws['U20'].value != None else 1.0
@@ -42,7 +51,6 @@ class FuncVars(object):
 
         # for obj in self.equipment_list:
         #     print("eqmt: ", obj.sound_level)
-
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
@@ -94,6 +102,16 @@ class Receiver(object):
         self.sound_limit = sound_limit
         self.predicted_sound_level = predicted_sound_level
 
+class Barrier(object):
+    def __init__(self, barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord):
+        self.barrier_name = barrier_name.replace(" ", "-")
+        self.x0_coord = x0_coord if x0_coord != None else 0
+        self.y0_coord = y0_coord if y0_coord != None else 0
+        self.z0_coord = z0_coord if z0_coord != None else 0
+        self.x1_coord = x1_coord if x1_coord != None else 0
+        self.y1_coord = y1_coord if y1_coord != None else 0
+        self.z1_coord = z1_coord if z1_coord != None else 0
+
 class Editor(tkinter.Frame):
     def __init__(self, parent):
         tkinter.Frame.__init__(self, parent)
@@ -106,7 +124,7 @@ class Editor(tkinter.Frame):
         #image sizing
         self.imageWidth, self.imageHeight = self.image.size
         print(self.image.size)
-        self.image_size_factor = 1.5
+        self.image_size_factor = 1.0
         self.imageWidth *= self.image_size_factor
         self.imageHeight *= self.image_size_factor
         self.imageWidth = int(self.imageWidth)
@@ -480,6 +498,72 @@ class Editor(tkinter.Frame):
         self.parent.pane_eqmt_info.generateEqmtTree()
         self.parent.pane_eqmt_info.generateRcvrTree()
 
+class Pane_Toolbox(tkinter.Frame):
+    def __init__(self, parent):
+        tkinter.Frame.__init__(self, parent)
+        self.parent = parent
+
+        self.button_set_image_scale = tkinter.Button(self, text="Set Image Scale", command=self.set_scale, font=(None, 15))
+        self.button_draw_equipment = tkinter.Button(self, text="Draw Equipment", command=self.draw_equipment, font=(None, 15))
+        self.button_draw_receiver = tkinter.Button(self, text="Draw Receiver", command=self.draw_receiver, font=(None, 15))
+        self.button_measure = tkinter.Button(self, text="Measure", command=self.measure, font=(None, 15))
+        self.button_rotate_eqmt_drawing = tkinter.Button(self, text="Rotate Eqmt Drawing", command=self.rotate_eqmt_drawing, font=(None, 15))
+        self.button_move_eqmt_drawing = tkinter.Button(self, text="Move Eqmt Drawing", command=self.move_eqmt_drawing, font=(None, 15))
+        self.button_resize_eqmt_drawing = tkinter.Button(self, text="Resize Eqmt Drawing", command=self.resize_eqmt_drawing, font=(None, 15))
+
+        self.button_set_image_scale.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_draw_equipment.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_draw_receiver.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_measure.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_rotate_eqmt_drawing.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_move_eqmt_drawing.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_resize_eqmt_drawing.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
+
+    def set_scale(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
+
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Setting Scale')
+        self.parent.pane_eqmt_info.e1.focus()
+
+    def draw_equipment(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease)
+
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Equipment')
+
+    def draw_receiver(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease)
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Receiver')
+
+    def measure(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.measureing_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease)
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Measuring')
+
+    def rotate_eqmt_drawing(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.rotating_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.rotating_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Rotating Equipment Drawing')
+
+    def move_eqmt_drawing(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.moving_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.moving_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Moving Equipment Drawing')
+
+    def resize_eqmt_drawing(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.resizing_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseRelease)
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Resizing Equipment Drawing')
+
 class Pane_Eqmt_Info(tkinter.Frame):
     def __init__(self, parent):
         tkinter.Frame.__init__(self, parent)
@@ -499,7 +583,6 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.status_label = tkinter.Label(self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15))
         self.measuremet_label = tkinter.Label(self, text="", borderwidth=2, relief="solid", font=(None, 15))
         self.receiver_list_label = tkinter.Label(self, text="Receivers", font=(None, 15))
-
         self.generateEqmtTree()
         self.generateRcvrTree()
 
@@ -655,72 +738,6 @@ class Pane_Eqmt_Info(tkinter.Frame):
     def e1_select_all(self, event):
         e1_text = self.e1.get()
         self.e1.selection_range(0, len(e1_text))
-
-class Pane_Toolbox(tkinter.Frame):
-    def __init__(self, parent):
-        tkinter.Frame.__init__(self, parent)
-        self.parent = parent
-
-        self.button_set_image_scale = tkinter.Button(self, text="Set Image Scale", command=self.set_scale, font=(None, 15))
-        self.button_draw_equipment = tkinter.Button(self, text="Draw Equipment", command=self.draw_equipment, font=(None, 15))
-        self.button_draw_receiver = tkinter.Button(self, text="Draw Receiver", command=self.draw_receiver, font=(None, 15))
-        self.button_measure = tkinter.Button(self, text="Measure", command=self.measure, font=(None, 15))
-        self.button_rotate_eqmt_drawing = tkinter.Button(self, text="Rotate Eqmt Drawing", command=self.rotate_eqmt_drawing, font=(None, 15))
-        self.button_move_eqmt_drawing = tkinter.Button(self, text="Move Eqmt Drawing", command=self.move_eqmt_drawing, font=(None, 15))
-        self.button_resize_eqmt_drawing = tkinter.Button(self, text="Resize Eqmt Drawing", command=self.resize_eqmt_drawing, font=(None, 15))
-
-        self.button_set_image_scale.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_draw_equipment.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_draw_receiver.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_measure.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_rotate_eqmt_drawing.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_move_eqmt_drawing.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_resize_eqmt_drawing.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
-
-    def set_scale(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove)
-        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
-
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Setting Scale')
-        self.parent.pane_eqmt_info.e1.focus()
-
-    def draw_equipment(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove)
-        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease)
-
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Equipment')
-
-    def draw_receiver(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove)
-        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease)
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Receiver')
-
-    def measure(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.measureing_leftMouseMove)
-        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease)
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Measuring')
-
-    def rotate_eqmt_drawing(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.rotating_eqmt_drawing_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.rotating_eqmt_drawing_leftMouseMove)
-        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Rotating Equipment Drawing')
-
-    def move_eqmt_drawing(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.moving_eqmt_drawing_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.moving_eqmt_drawing_leftMouseMove)
-        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Moving Equipment Drawing')
-
-    def resize_eqmt_drawing(self):
-        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseClick)
-        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.resizing_eqmt_drawing_leftMouseMove)
-        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseRelease)
-        self.parent.pane_eqmt_info.status_label.configure(text='Status: Resizing Equipment Drawing')
 
 class Main_Application(tkinter.Frame):
     def __init__(self, parent):
