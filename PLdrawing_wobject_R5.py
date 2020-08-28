@@ -181,10 +181,6 @@ class Editor(tkinter.Frame):
         self.canvas.bind('<Enter>', self._bound_to_mousewheel)
         self.canvas.bind('<Leave>', self._unbound_to_mousewheel)
 
-        self.canvas.bind("<ButtonPress-1>", self._on_left_mouseclick)
-        self.canvas.bind("<B1-Motion>", self.on_move_left_mouseclick)
-        self.canvas.bind("<ButtonRelease-1>", self._on_left_mouseclick_release)
-
     def _bound_to_mousewheel(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Shift-MouseWheel>", self._on_shift_mousewheel)
@@ -207,220 +203,212 @@ class Editor(tkinter.Frame):
             angle += 90
         print("hey", angle)
         return angle
-
     def update_distance_label(self):
         self.parent.pane_eqmt_info.measuremet_label.configure(text=str(round(self.parent.func_vars.master_scale*(math.sqrt((self.x0 - self.curX)**2 + (self.y0 - self.curY)**2)),2)) + " ft")
-
-    def _on_left_mouseclick(self, event):
+    def get_current_n_start_mouse_pos(self, event):
         self.x0 = self.canvas.canvasx(event.x)
         self.y0 = self.canvas.canvasy(event.y)
         self.curX = self.canvas.canvasx(event.x)
         self.curY = self.canvas.canvasy(event.y)
-
-        if self.parent.pane_toolbox.setting_scale == True:
-            if self.scale_line != None:
-                self.canvas.delete(self.scale_line)
-            self.temp_scale_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="orange", width=5)
-            # self.canvas.coords(self.temp_scale_line, self.x0, self.y0, self.curX, self.curY) #do i need this?
-
-        elif self.parent.pane_toolbox.measuring == True:
-            if self.measure_line != None:
-                self.canvas.delete(self.measure_line)
-            self.update_distance_label()
-            self.temp_measure_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="orange", width=5)
-
-        elif self.parent.pane_toolbox.drawing_equipment == True:
-            self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='red')
-
-        elif self.parent.pane_toolbox.drawing_receiver == True:
-            self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='green')
-
-        elif self.parent.pane_toolbox.rotating_eqmt_drawing == True:
-            #calc angle at start point
-            self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
-            self.angle0 = self.get_angle(self.x0-self.eqmt_drawing_center[0], self.y0-self.eqmt_drawing_center[1]) - self.angle
-
-        elif self.parent.pane_toolbox.moving_eqmt_drawing == True:
-            self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
-            x_shifter = self.curX - self.x0
-            y_shifter = self.curY - self.y0
-            self.canvas.delete("eqmt_drawing")
-            self.canvas.create_image(self.eqmt_drawing_center[0] + x_shifter, self.eqmt_drawing_center[1] + y_shifter, image=self.tk_image2, tag="eqmt_drawing")
-
-        elif self.parent.pane_toolbox.resizing_eqmt_drawing == True:
-            self.eqmt_dwg_cntr = self.canvas.coords("eqmt_drawing")
-            self.eqmt_dwg_width_0 = self.image2_new_width
-            self.eqmt_dwg_height_0 = self.image2_new_height
-            self.eqmt_dwg_ratio = self.eqmt_dwg_width_0 / self.eqmt_dwg_height_0
-            self.rect_p1_x0 = self.eqmt_dwg_cntr[0]-self.eqmt_dwg_width_0/2
-            self.rect_p2_x0 = self.eqmt_dwg_cntr[0]+self.eqmt_dwg_width_0/2
-            self.rect_p1_y0 = self.eqmt_dwg_cntr[1]-self.eqmt_dwg_height_0/2
-            self.rect_p2_y0 = self.eqmt_dwg_cntr[1]+self.eqmt_dwg_height_0/2
-            self.temp_rect = self.canvas.create_rectangle(self.rect_p1_x0, self.rect_p1_y0, self.rect_p2_x0, self.rect_p2_y0, outline='red')
-
-
-    def on_move_left_mouseclick(self, event):
+    def get_current_mouse_pos(self, event):
         self.curX = self.canvas.canvasx(event.x)
         self.curY = self.canvas.canvasy(event.y)
 
-        if self.parent.pane_toolbox.setting_scale == True:
-            self.canvas.coords(self.temp_scale_line, self.x0, self.y0, self.curX, self.curY)
+    def setting_scale_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
 
-        elif self.parent.pane_toolbox.measuring == True:
-            self.canvas.coords(self.temp_measure_line, self.x0, self.y0, self.curX, self.curY)
-            self.update_distance_label()
+        if self.scale_line != None:
+            self.canvas.delete(self.scale_line)
+        self.temp_scale_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="orange", width=5)
+    def setting_scale_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.coords(self.temp_scale_line, self.x0, self.y0, self.curX, self.curY)
+    def setting_scale_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.delete(self.temp_scale_line)
 
-        elif self.parent.pane_toolbox.drawing_equipment == True:
-            self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY)
+        self.scale_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="blue", width=5)
+        scale_line_coords = self.canvas.coords(self.scale_line)
+        # self.parent.func_vars.scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
+        # self.parent.func_vars.known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
+        _scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
+        _known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
+        self.parent.func_vars.update_master_scale(_scale_line_distance_px, _known_distance_ft)
+        # self.parent.func_vars.old_master_scale = self.parent.func_vars.master_scale
+        # self.parent.func_vars.master_scale = self.parent.func_vars.known_distance_ft / self.parent.func_vars.scale_line_distance_px
 
-        elif self.parent.pane_toolbox.drawing_receiver == True:
-            self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY)
+        scaleIndicatorLabelText = "Scale: " + str(round(self.parent.func_vars.scale_line_distance_px,0)) + " px = " + str(self.parent.func_vars.known_distance_ft) + " ft"
+        self.parent.pane_eqmt_info.scaleIndicatorLabel.configure(text=scaleIndicatorLabelText)
 
-        elif self.parent.pane_toolbox.rotating_eqmt_drawing == True:
-            # calculate current angle relative to initial angle
-            self.angle_1 = self.get_angle(self.curX-self.eqmt_drawing_center[0], self.curY-self.eqmt_drawing_center[1])
-            dwg_x = self.eqmt_drawing_center[0]
-            dwg_y = self.eqmt_drawing_center[1]
+    def drawing_eqmt_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='red')
+    def drawing_eqmt_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY)
+    def drawing_eqmt_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.delete(self.temp_rect)
 
-            if self.curX > dwg_x and self.curY > dwg_y:
-                self.angle_1 *= -1
+        random_8bit_color = CraigsFunFunctions.random_8bit_color()
 
-            elif self.curX < dwg_x and self.curY < dwg_y:
-                self.angle_1 = 180 - self.angle_1
+        eqmt_tag=self.parent.pane_eqmt_info.current_euqipment[1] # i think this is grabbing from the tree
+        tagged_objects = self.canvas.find_withtag(eqmt_tag)
+        for tagged_object in tagged_objects:
+            self.canvas.delete(tagged_object)
+        self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=eqmt_tag, fill=random_8bit_color, activeoutline='red')
 
-            elif self.curX < dwg_x and self.curY > dwg_y:
-                self.angle_1 = self.angle_1 + 180
+        self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=eqmt_tag, text=eqmt_tag, font=("arial.ttf", 15), fill='Black')
 
-            elif self.curX < dwg_x and self.curY > dwg_y:
-                self.angle_1 = self.angle_1 + 360
+        #update this one piece of eqmt
+        for obj in self.parent.func_vars.equipment_list:
+            if obj.eqmt_tag == eqmt_tag:
+                obj.x_coord = self.x0 + (self.curX - self.x0)/2
+                obj.y_coord = self.y0 + (self.curY - self.y0)/2
+                obj.x_coord *= self.parent.func_vars.master_scale
+                obj.y_coord *= self.parent.func_vars.master_scale
+                obj.x_coord = round(obj.x_coord, 2)
+                obj.y_coord = round(obj.y_coord, 2)
+                # print(obj.x_coord)
+                # print(obj.y_coord)
 
-            # self.angle = self.angle_1 - self.angle0
-            self.angle = self.angle_1
+        self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_eqmt_info.generateRcvrTree()
+        self.parent.pane_eqmt_info.generateEqmtTree()
 
-            self.canvas.delete("eqmt_drawing")
-            self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
-            self.canvas.create_image(self.eqmt_drawing_center[0], self.eqmt_drawing_center[1], image=self.tk_image2, tag="eqmt_drawing")
-            self.canvas.tag_lower("eqmt_rdawing")
-            self.canvas.tag_lower("bed_layer")
+    def drawing_rcvr_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='green')
+    def drawing_rcvr_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY)
+    def drawing_rcvr_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.delete(self.temp_rect)
 
-        elif self.parent.pane_toolbox.moving_eqmt_drawing == True:
-            # self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
-            x_shifter = self.curX - self.x0
-            y_shifter = self.curY - self.y0
-            self.canvas.delete("eqmt_drawing")
-            self.canvas.create_image(self.eqmt_drawing_center[0] + x_shifter, self.eqmt_drawing_center[1] + y_shifter, image=self.tk_image2, tag="eqmt_drawing")
-            self.canvas.tag_lower("eqmt_drawing")
-            self.canvas.tag_lower("bed_layer")
+        random_8bit_color = CraigsFunFunctions.random_8bit_color()
 
-        elif self.parent.pane_toolbox.resizing_eqmt_drawing == True:
-            self.x_change = self.curX - self.x0
-            self.y_change = self.curY - self.y0
-            self.rect_p1_x1 = self.rect_p1_x0
-            self.rect_p2_x2 = self.rect_p2_x0 + self.x_change
-            self.rect_p1_y1 = self.rect_p1_y0
-            self.rect_p2_y1 = self.rect_p2_y0 + self.x_change / self.eqmt_dwg_ratio
-            self.canvas.coords(self.temp_rect, self.rect_p1_x1, self.rect_p1_y1, self.rect_p2_x2, self.rect_p2_y1)
+        r_name=self.parent.pane_eqmt_info.current_receiver[0]
+        tagged_objects = self.canvas.find_withtag(r_name)
+        for tagged_object in tagged_objects:
+            self.canvas.delete(tagged_object)
+        self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=r_name, fill=random_8bit_color, activeoutline='red')
 
+        self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=r_name, text=r_name, font=("arial.ttf", 15), fill='Black')
 
+        #update this one rcvr
+        for obj in self.parent.func_vars.receiver_list:
+            if obj.r_name == r_name:
+                obj.x_coord = self.x0 + (self.curX - self.x0)/2
+                obj.y_coord = self.y0 + (self.curY - self.y0)/2
+                obj.x_coord *= self.parent.func_vars.master_scale
+                obj.y_coord *= self.parent.func_vars.master_scale
+                obj.x_coord = round(obj.x_coord, 2)
+                obj.y_coord = round(obj.y_coord, 2)
 
-    def _on_left_mouseclick_release(self, event):
-        self.curX = self.canvas.canvasx(event.x)
-        self.curY = self.canvas.canvasy(event.y)
+        self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_eqmt_info.generateRcvrTree()
 
-        if self.parent.pane_toolbox.setting_scale == True:
-            self.canvas.delete(self.temp_scale_line)
+    def measureing_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        if self.measure_line != None:
+            self.canvas.delete(self.measure_line)
+        self.update_distance_label()
+        self.temp_measure_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="orange", width=5)
+    def measureing_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.coords(self.temp_measure_line, self.x0, self.y0, self.curX, self.curY)
+        self.update_distance_label()
+    def measureing_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.delete(self.temp_measure_line)
+        self.measure_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="red", width=5)
 
-            self.scale_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="blue", width=5)
-            scale_line_coords = self.canvas.coords(self.scale_line)
-            # self.parent.func_vars.scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
-            # self.parent.func_vars.known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
-            _scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
-            _known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
-            self.parent.func_vars.update_master_scale(_scale_line_distance_px, _known_distance_ft)
-            # self.parent.func_vars.old_master_scale = self.parent.func_vars.master_scale
-            # self.parent.func_vars.master_scale = self.parent.func_vars.known_distance_ft / self.parent.func_vars.scale_line_distance_px
+    def rotating_eqmt_drawing_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        #calc angle at start point
+        self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
+        self.angle0 = self.get_angle(self.x0-self.eqmt_drawing_center[0], self.y0-self.eqmt_drawing_center[1]) - self.angle
+    def rotating_eqmt_drawing_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        # calculate current angle relative to initial angle
+        self.angle_1 = self.get_angle(self.curX-self.eqmt_drawing_center[0], self.curY-self.eqmt_drawing_center[1])
+        dwg_x = self.eqmt_drawing_center[0]
+        dwg_y = self.eqmt_drawing_center[1]
 
-            scaleIndicatorLabelText = "Scale: " + str(round(self.parent.func_vars.scale_line_distance_px,0)) + " px = " + str(self.parent.func_vars.known_distance_ft) + " ft"
-            self.parent.pane_eqmt_info.scaleIndicatorLabel.configure(text=scaleIndicatorLabelText)
+        if self.curX > dwg_x and self.curY > dwg_y:
+            self.angle_1 *= -1
+        elif self.curX < dwg_x and self.curY < dwg_y:
+            self.angle_1 = 180 - self.angle_1
+        elif self.curX < dwg_x and self.curY > dwg_y:
+            self.angle_1 = self.angle_1 + 180
+        elif self.curX < dwg_x and self.curY > dwg_y:
+            self.angle_1 = self.angle_1 + 360
 
-        elif self.parent.pane_toolbox.measuring == True:
-            self.canvas.delete(self.temp_measure_line)
-            self.measure_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill="red", width=5)
+        self.angle = self.angle_1
 
-        elif self.parent.pane_toolbox.drawing_equipment == True:
-            self.canvas.delete(self.temp_rect)
+        self.canvas.delete("eqmt_drawing")
+        self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
+        self.canvas.create_image(self.eqmt_drawing_center[0], self.eqmt_drawing_center[1], image=self.tk_image2, tag="eqmt_drawing")
+        self.canvas.tag_lower("eqmt_rdawing")
+        self.canvas.tag_lower("bed_layer")
 
-            random_8bit_color = CraigsFunFunctions.random_8bit_color()
+    def moving_eqmt_drawing_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
+        x_shifter = self.curX - self.x0
+        y_shifter = self.curY - self.y0
+        self.canvas.delete("eqmt_drawing")
+        self.canvas.create_image(self.eqmt_drawing_center[0] + x_shifter, self.eqmt_drawing_center[1] + y_shifter, image=self.tk_image2, tag="eqmt_drawing")
+    def moving_eqmt_drawing_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        # self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
+        x_shifter = self.curX - self.x0
+        y_shifter = self.curY - self.y0
+        self.canvas.delete("eqmt_drawing")
+        self.canvas.create_image(self.eqmt_drawing_center[0] + x_shifter, self.eqmt_drawing_center[1] + y_shifter, image=self.tk_image2, tag="eqmt_drawing")
+        self.canvas.tag_lower("eqmt_drawing")
+        self.canvas.tag_lower("bed_layer")
 
-            eqmt_tag=self.parent.pane_eqmt_info.current_euqipment[1] # i think this is grabbing from the tree
-            tagged_objects = self.canvas.find_withtag(eqmt_tag)
-            for tagged_object in tagged_objects:
-                self.canvas.delete(tagged_object)
-            self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=eqmt_tag, fill=random_8bit_color, activeoutline='red')
+    def resizing_eqmt_drawing_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        self.eqmt_dwg_cntr = self.canvas.coords("eqmt_drawing")
+        self.eqmt_dwg_width_0 = self.image2_new_width
+        self.eqmt_dwg_height_0 = self.image2_new_height
+        self.eqmt_dwg_ratio = self.eqmt_dwg_width_0 / self.eqmt_dwg_height_0
+        self.rect_p1_x0 = self.eqmt_dwg_cntr[0]-self.eqmt_dwg_width_0/2
+        self.rect_p2_x0 = self.eqmt_dwg_cntr[0]+self.eqmt_dwg_width_0/2
+        self.rect_p1_y0 = self.eqmt_dwg_cntr[1]-self.eqmt_dwg_height_0/2
+        self.rect_p2_y0 = self.eqmt_dwg_cntr[1]+self.eqmt_dwg_height_0/2
+        self.temp_rect = self.canvas.create_rectangle(self.rect_p1_x0, self.rect_p1_y0, self.rect_p2_x0, self.rect_p2_y0, outline='red')
+    def resizing_eqmt_drawing_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.x_change = self.curX - self.x0
+        self.y_change = self.curY - self.y0
+        self.rect_p1_x1 = self.rect_p1_x0
+        self.rect_p2_x2 = self.rect_p2_x0 + self.x_change
+        self.rect_p1_y1 = self.rect_p1_y0
+        self.rect_p2_y1 = self.rect_p2_y0 + self.x_change / self.eqmt_dwg_ratio
+        self.canvas.coords(self.temp_rect, self.rect_p1_x1, self.rect_p1_y1, self.rect_p2_x2, self.rect_p2_y1)
+    def resizing_eqmt_drawing_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.eqmt_dwg_width_1 = self.eqmt_dwg_width_0 + int(self.x_change)
+        self.eqmt_dwg_height_1 = int(self.eqmt_dwg_width_1 / self.eqmt_dwg_ratio)
+        self.eqmt_dwg_cntr[0] += int(self.x_change/2)
+        self.eqmt_dwg_cntr[1] += int((self.x_change / self.eqmt_dwg_ratio)/2)
 
-            self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=eqmt_tag, text=eqmt_tag, font=("arial.ttf", 15), fill='Black')
+        self.canvas.delete("eqmt_drawing")
+        self.canvas.delete(self.temp_rect)
+        self.image2 = self.image2.resize((self.eqmt_dwg_width_1, self.eqmt_dwg_height_1), Image.LANCZOS)
+        self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
+        self.canvas.create_image(self.eqmt_dwg_cntr[0], self.eqmt_dwg_cntr[1], image=self.tk_image2, tag="eqmt_drawing")
 
-            #update this one piece of eqmt
-            for obj in self.parent.func_vars.equipment_list:
-                if obj.eqmt_tag == eqmt_tag:
-                    obj.x_coord = self.x0 + (self.curX - self.x0)/2
-                    obj.y_coord = self.y0 + (self.curY - self.y0)/2
-                    obj.x_coord *= self.parent.func_vars.master_scale
-                    obj.y_coord *= self.parent.func_vars.master_scale
-                    obj.x_coord = round(obj.x_coord, 2)
-                    obj.y_coord = round(obj.y_coord, 2)
-                    # print(obj.x_coord)
-                    # print(obj.y_coord)
+        self.image2_new_width = self.eqmt_dwg_width_1
+        self.image2_new_height = self.eqmt_dwg_height_1
 
-            self.parent.pane_eqmt_info.update_est_noise_levels()
-            self.parent.pane_eqmt_info.generateRcvrTree()
-            self.parent.pane_eqmt_info.generateEqmtTree()
+        self.canvas.tag_lower("eqmt_drawing")
+        self.canvas.tag_lower("bed_layer")
 
-        elif self.parent.pane_toolbox.drawing_receiver == True:
-            self.canvas.delete(self.temp_rect)
-
-            random_8bit_color = CraigsFunFunctions.random_8bit_color()
-
-            r_name=self.parent.pane_eqmt_info.current_receiver[0]
-            tagged_objects = self.canvas.find_withtag(r_name)
-            for tagged_object in tagged_objects:
-                self.canvas.delete(tagged_object)
-            self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=r_name, fill=random_8bit_color, activeoutline='red')
-
-            self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=r_name, text=r_name, font=("arial.ttf", 15), fill='Black')
-
-            #update this one rcvr
-            for obj in self.parent.func_vars.receiver_list:
-                if obj.r_name == r_name:
-                    obj.x_coord = self.x0 + (self.curX - self.x0)/2
-                    obj.y_coord = self.y0 + (self.curY - self.y0)/2
-                    obj.x_coord *= self.parent.func_vars.master_scale
-                    obj.y_coord *= self.parent.func_vars.master_scale
-                    obj.x_coord = round(obj.x_coord, 2)
-                    obj.y_coord = round(obj.y_coord, 2)
-                    # print(obj.x_coord)
-                    # print(obj.y_coord)
-
-            self.parent.pane_eqmt_info.update_est_noise_levels()
-            self.parent.pane_eqmt_info.generateRcvrTree()
-
-        elif self.parent.pane_toolbox.resizing_eqmt_drawing == True:
-            self.eqmt_dwg_width_1 = self.eqmt_dwg_width_0 + int(self.x_change)
-            self.eqmt_dwg_height_1 = int(self.eqmt_dwg_width_1 / self.eqmt_dwg_ratio)
-            self.eqmt_dwg_cntr[0] += int(self.x_change/2)
-            self.eqmt_dwg_cntr[1] += int((self.x_change / self.eqmt_dwg_ratio)/2)
-
-            self.canvas.delete("eqmt_drawing")
-            self.canvas.delete(self.temp_rect)
-            self.image2 = self.image2.resize((self.eqmt_dwg_width_1, self.eqmt_dwg_height_1), Image.LANCZOS)
-            self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
-            self.canvas.create_image(self.eqmt_dwg_cntr[0], self.eqmt_dwg_cntr[1], image=self.tk_image2, tag="eqmt_drawing")
-
-            self.image2_new_width = self.eqmt_dwg_width_1
-            self.image2_new_height = self.eqmt_dwg_height_1
-
-            self.canvas.tag_lower("eqmt_drawing")
-            self.canvas.tag_lower("bed_layer")
 
     def shift_click(self, event):
         if self.canvas.find_withtag("current"):
@@ -432,10 +420,7 @@ class Editor(tkinter.Frame):
             self.current_rect_coords = self.canvas.coords(self.current_rect)
             self.current_text_coords = self.canvas.coords(self.current_text)
 
-            self.x0 = self.canvas.canvasx(event.x)
-            self.y0 = self.canvas.canvasy(event.y)
-            self.curX = self.canvas.canvasx(event.x)
-            self.curY = self.canvas.canvasy(event.y)
+            self.get_current_n_start_mouse_pos(event)
 
         for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_or_rcvr_num:
@@ -446,10 +431,8 @@ class Editor(tkinter.Frame):
             if obj.r_name == self.tag_or_rcvr_num:
                 self.obj_x_coord_0 = obj.x_coord
                 self.obj_y_coord_0 = obj.y_coord
-
     def shift_click_move(self, event):
-        self.curX = self.canvas.canvasx(event.x)
-        self.curY = self.canvas.canvasy(event.y)
+        self.get_current_mouse_pos(event)
         x_shifter = self.curX - self.x0
         y_shifter = self.curY - self.y0
         self.canvas.coords(self.current_rect, self.current_rect_coords[0]+x_shifter, self.current_rect_coords[1]+y_shifter, self.current_rect_coords[2]+x_shifter, self.current_rect_coords[3]+y_shifter)
@@ -472,10 +455,8 @@ class Editor(tkinter.Frame):
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateEqmtTree()
         self.parent.pane_eqmt_info.generateRcvrTree()
-
     def shift_click_release(self, event):
-        self.curX = self.canvas.canvasx(event.x)
-        self.curY = self.canvas.canvasy(event.y)
+        self.get_current_mouse_pos(event)
         x_shifter = self.curX - self.x0
         y_shifter = self.curY - self.y0
         self.canvas.coords(self.current_rect, self.current_rect_coords[0]+x_shifter, self.current_rect_coords[1]+y_shifter, self.current_rect_coords[2]+x_shifter, self.current_rect_coords[3]+y_shifter)
@@ -531,7 +512,6 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.equipment_tree.grid(row=6, column=1, sticky=tkinter.N + tkinter.W)
         self.receiver_list_label.grid(row=7, column=1, pady=20, sticky=tkinter.N)
         self.receiver_tree.grid(row=8, column=1, sticky=tkinter.N + tkinter.W)
-
 
     def generateEqmtTree(self):
         try: # delete tree if already exists
@@ -697,47 +677,49 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_move_eqmt_drawing.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
         self.button_resize_eqmt_drawing.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
 
-    def _setting_other_tools_false(self):
-        self.measuring = False
-        self.setting_scale = False
-        self.drawing_equipment = False
-        self.drawing_receiver = False
-        self.rotating_eqmt_drawing = False
-        self.moving_eqmt_drawing = False
-        self.resizing_eqmt_drawing = False
-
     def set_scale(self):
-        self._setting_other_tools_false()
-        self.setting_scale = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
+
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Setting Scale')
         self.parent.pane_eqmt_info.e1.focus()
 
     def draw_equipment(self):
-        self._setting_other_tools_false()
-        self.drawing_equipment = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease)
+
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Equipment')
 
     def draw_receiver(self):
-        self._setting_other_tools_false()
-        self.drawing_receiver = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease)
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Receiver')
 
     def measure(self):
-        self._setting_other_tools_false()
-        self.measuring = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.measureing_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease)
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Measuring')
 
     def rotate_eqmt_drawing(self):
-        self._setting_other_tools_false()
-        self.rotating_eqmt_drawing = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.rotating_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.rotating_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Rotating Equipment Drawing')
+
     def move_eqmt_drawing(self):
-        self._setting_other_tools_false()
-        self.moving_eqmt_drawing = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.moving_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.moving_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Moving Equipment Drawing')
+
     def resize_eqmt_drawing(self):
-        self._setting_other_tools_false()
-        self.resizing_eqmt_drawing = True
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.resizing_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseRelease)
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Resizing Equipment Drawing')
 
 class Main_Application(tkinter.Frame):
@@ -756,7 +738,6 @@ class Main_Application(tkinter.Frame):
 
 def main():
     root = tkinter.Tk()
-
     mainApp = Main_Application(root)
     mainApp.pack(side="top", fill="both", expand=True)
     root.geometry('+0+0') #puts window in top left
