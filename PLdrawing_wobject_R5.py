@@ -124,7 +124,7 @@ class Editor(tkinter.Frame):
         #image sizing
         self.imageWidth, self.imageHeight = self.image.size
         print(self.image.size)
-        self.image_size_factor = 1.0
+        self.image_size_factor = 1.5
         self.imageWidth *= self.image_size_factor
         self.imageHeight *= self.image_size_factor
         self.imageWidth = int(self.imageWidth)
