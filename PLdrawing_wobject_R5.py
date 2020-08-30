@@ -8,6 +8,7 @@ import sys
 sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Python Scripts')
 import CraigsFunFunctions
 import numpy
+import tkinter.font
 
 BED_IMAGE_FILEPATH = "PDFXEdit_2020-08-25_19-36-01.png"
 TOP_IMAGE_FILEPATH = "PDFXEdit_2020-08-25_19-36-01.png"
@@ -34,23 +35,18 @@ class FuncVars(object):
             if r_name.value == None: break
             self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
 
+        #initialize barrier list
         self.barrier_list = list()
         for barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T'], ws['U'], ws['V']):
             if int(barrier_name.coordinate[1:]) < 24: continue
-            # print("printed", int(barrier_name.coordinate[1:]))
-            # print("printed", barrier_name)
             if barrier_name.value == None: break
             self.barrier_list.append(Barrier(str(barrier_name.value), x0_coord.value, y0_coord.value, z0_coord.value, x1_coord.value, y1_coord.value, z1_coord.value))
-        # print(self.barrier_list[0].barrier_name)
 
         #initialize master_scale
         self.old_master_scale = 1.0
         self.known_distance_ft = ws['U20'].value if ws['U20'].value != None else 1.0
         self.scale_line_distance_px = ws['V20'].value if ws['V20'].value != None else 1.0
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
-
-        # for obj in self.equipment_list:
-        #     print("eqmt: ", obj.sound_level)
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
@@ -569,6 +565,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
         tkinter.Frame.__init__(self, parent)
         self.parent = parent
         self.update_est_noise_levels()
+        
+        self.myFont = tkinter.font.nametofont('TkTextFont')
 
         self.e1 = tkinter.Entry(self, font=(None, 15), width=36)
         self.e1.insert(0, "input scale & eqmt_tag names here prior to setting")
@@ -585,6 +583,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.receiver_list_label = tkinter.Label(self, text="Receivers", font=(None, 15))
         self.generateEqmtTree()
         self.generateRcvrTree()
+        self.generateBarrierTree()
 
         self.e1.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
         self.exportList_button.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
@@ -595,6 +594,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.equipment_tree.grid(row=6, column=1, sticky=tkinter.N + tkinter.W)
         self.receiver_list_label.grid(row=7, column=1, pady=20, sticky=tkinter.N)
         self.receiver_tree.grid(row=8, column=1, sticky=tkinter.N + tkinter.W)
+        self.barrier_tree.grid(row=9, column=1, sticky=tkinter.N + tkinter.W)
 
     def generateEqmtTree(self):
         try: # delete tree if already exists
@@ -605,31 +605,45 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value)
-                if i == len(self.equipment_tree_rows)-1:
-                    for col in self.equipment_tree_columns:
-                        if col in ("eqmt_tag", "model"):
-                            width_mult = 10
-                        else:
-                            width_mult = 5
-                        self.equipment_tree.column(col, minwidth=20, width=len(value)*width_mult, stretch=0)
+
         except:
-            self.equipment_tree_columns = ["count", "eqmt_tag", "path", "make", "model", "sound_level", "sound_ref_dist", "x_coord", "y_coord", "z_coord"]
+            self.equipment_tree_columns = ["count", "tag", "path", "make", "model", "sound_level", "sound_ref_dist", "x", "y", "z"]
             self.equipment_tree_rows = []
+            self.maxWidths = []
+
+            # create widths
+            for item in self.equipment_tree_columns:
+                self.maxWidths.append(self.myFont.measure(str(item)))
+
+            #create wors with eqmt data
             for i in self.parent.func_vars.equipment_list:
                 self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.x_coord, i.y_coord, i.z_coord])
+            
+            #getting max widths
+            for col_idx in range(len(self.equipment_tree_rows[0])):
+                maxWidth = self.maxWidths[col_idx]
+                for row in self.equipment_tree_rows:
+                    currentWidth = self.myFont.measure(str(row[col_idx]))
+                    if currentWidth > maxWidth:
+                        maxWidth = currentWidth
+                self.maxWidths[col_idx] = maxWidth
+
+            #initialize tree
             self.equipment_tree = tkinter.ttk.Treeview(self, columns=self.equipment_tree_columns, show='headings')
+
+            # add rows and colmns to tree
             for col in self.equipment_tree_columns:
+                new_length = self.myFont.measure(str(col))
                 self.equipment_tree.heading(col, text=col)
-                self.equipment_tree.column(col, minwidth=10, width=len(col)*10, stretch=0)
+                self.equipment_tree.column(col, minwidth=50, width=new_length+50, stretch=0)       
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value)
+                #sizing
                 if i == len(self.equipment_tree_rows)-1:
                     for col in self.equipment_tree_columns:
                         if col in ("eqmt_tag", "model"):
                             width_mult = 10
-                        else:
-                            width_mult = 5
-                        self.equipment_tree.column(col, minwidth=20, width=len(value)*width_mult, stretch=0)
+                            self.equipment_tree.column(col, minwidth=20, width=len(value)*width_mult, stretch=0)          
 
     def generateRcvrTree(self):
         try: # delete tree if already exists
@@ -639,26 +653,88 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.receiver_tree_rows.append([i.r_name, i.x_coord, i.y_coord, i.z_coord, i.sound_limit, i.predicted_sound_level])
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value)
-                if i == len(self.receiver_tree_rows)-1:
-                    for col in self.receiver_tree_columns:
-                        self.receiver_tree.column(col, minwidth=20, width=len(value)*7, stretch=0)
+
         except:
-            self.receiver_tree_columns = ["R#", "x_coord", "y_coord", "z_coord", "sound limit", "est. level"]
+            self.receiver_tree_columns = ["R#", "x", "y", "z", "sound limit", "est. level"]
             self.receiver_tree_rows = []
+            self.maxWidths = []
+
+            #create widths
+            for item in self.receiver_tree_columns:
+                self.maxWidths.append(self.myFont.measure(str(item)))
+            
+            #create rows with rcvr data
             for i in self.parent.func_vars.receiver_list:
                 self.receiver_tree_rows.append([i.r_name, i.x_coord, i.y_coord, i.z_coord, i.sound_limit, i.predicted_sound_level])
+            print(self.receiver_tree_rows)
+
+            #getting max widths
+            for col_idx in range(len(self.receiver_tree_rows[0])):
+                maxWidth = self.maxWidths[col_idx]
+                for row in self.receiver_tree_rows:
+                    currentWidth = self.myFont.measure(str(row[col_idx]))
+                    if currentWidth > maxWidth:
+                        maxWidth = currentWidth
+                self.maxWidths[col_idx] = maxWidth
+
+            # initializing receiver tree
             self.receiver_tree = tkinter.ttk.Treeview(self, columns=self.receiver_tree_columns, show='headings')
-            for col in self.receiver_tree_columns:
+            
+            # adding columns and rows
+            for col, maxWidth in zip(self.receiver_tree_columns, self.maxWidths):
                 self.receiver_tree.heading(col, text=col)
-                self.receiver_tree.column(col, minwidth=20, width=len(col)*7, stretch=0)
+                self.receiver_tree.column(col, minwidth=50, width=maxWidth+20, stretch=0)       
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value)
-                if i == len(self.receiver_tree_rows)-1:
-                    for col in self.receiver_tree_columns:
-                        self.receiver_tree.column(col, minwidth=20, width=len(value)*7, stretch=0)
 
         self.equipment_tree.bind('<ButtonRelease-1>', self.select_item_from_eqmt_tree)
         self.receiver_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
+
+    def generateBarrierTree(self):
+        try: # delete tree if already exists
+            self.barrier_tree.delete(*self.barrier_tree.get_children())
+            self.barrier_tree_rows = []
+            for i in self.parent.func_vars.barrier_list:
+                self.barrier_tree_rows.append([i.barrier_name, i.x0_coord, i.y0_coord, i.z0_coord, i.x1_coord, i.y1_coord, i.z1_coord])          
+            for i, value in enumerate(self.barrier_tree_rows):
+                self.barrier_tree.insert("", "end", values=value, tags=self.myFont)
+
+        except:
+            self.barrier_tree_columns = ["barrier_name", "x0", "y0", "z0", "x1", "y1", "z1"]
+            self.barrier_tree_rows = []
+            self.maxWidths = []
+
+            #create widths
+            for item in self.barrier_tree_columns:
+                self.maxWidths.append(self.myFont.measure(str(item)))
+
+            #create rows with barrier data
+            for i in self.parent.func_vars.barrier_list:
+                self.barrier_tree_rows.append([i.barrier_name, i.x0_coord, i.y0_coord, i.z0_coord, i.x1_coord, i.y1_coord, i.z1_coord])
+            
+            #getting max widths
+            for col_idx in range(len(self.barrier_tree_rows[0])):
+                maxWidth = self.maxWidths[col_idx]
+                for row in self.barrier_tree_rows:
+                    currentWidth = self.myFont.measure(str(row[col_idx]))
+                    if currentWidth > maxWidth:
+                        maxWidth = currentWidth
+                self.maxWidths[col_idx] = maxWidth
+
+            # initializing barrier tree 
+            self.barrier_tree = tkinter.ttk.Treeview(self, columns=self.barrier_tree_columns, show='headings')
+            
+            # adding columns and rows
+            for col in self.barrier_tree_columns:
+                new_length = self.myFont.measure(str(col))
+                self.barrier_tree.heading(col, text=col)
+                self.barrier_tree.column(col, minwidth=50, width=new_length+50, stretch=0)          
+            for i, value in enumerate(self.barrier_tree_rows):
+                self.barrier_tree.insert("", "end", values=value, tags=self.myFont)
+
+
+        self.equipment_tree.bind('<ButtonRelease-1>', self.select_item_from_eqmt_tree)
+        self.barrier_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
 
     def update_est_noise_levels(self):
         for rcvr in self.parent.func_vars.receiver_list:
