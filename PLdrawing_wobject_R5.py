@@ -23,10 +23,10 @@ class FuncVars(object):
 
         #initialize eqmt list
         self.equipment_list = list()
-        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['J'], ws['K'], ws['L'] ):
+        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, insertion_loss, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['I'], ws['J'], ws['K'], ws['L'] ):
             if count.value == "Number of Units": continue
             if count.value == None: break
-            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, x_coord.value, y_coord.value, z_coord.value))
+            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, insertion_loss.value, x_coord.value, y_coord.value, z_coord.value))
 
         #initialize rcvr list
         self.receiver_list = list()
@@ -77,7 +77,7 @@ class FuncVars(object):
         self.parent.pane_eqmt_info.generateEqmtTree()
 
 class Equipment(object):
-    def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, x_coord, y_coord, z_coord):
+    def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, insertion_loss, x_coord, y_coord, z_coord):
         self.count = count
         self.eqmt_tag = eqmt_tag.replace(" ", "-")
         self.path = path
@@ -85,6 +85,7 @@ class Equipment(object):
         self.model = model
         self.sound_level = sound_level if sound_level != None else 0
         self.sound_ref_dist = sound_ref_dist if sound_ref_dist != None else 0
+        self.insertion_loss = insertion_loss if insertion_loss != None else 0
         self.x_coord = x_coord if x_coord != None else 0
         self.y_coord = y_coord if y_coord != None else 0
         self.z_coord = z_coord if z_coord != None else 0
@@ -183,6 +184,7 @@ class Editor(tkinter.Frame):
         '''initialize receivers and equipment boxes'''
 
         self.temp_rect = None
+        self.temp_line = None
         self.scale_line = None
         self.measure_line = None
         self.angle = 0
@@ -218,7 +220,7 @@ class Editor(tkinter.Frame):
         print("hey", angle)
         return angle
     def update_distance_label(self):
-        self.parent.pane_eqmt_info.measuremet_label.configure(text=str(round(self.parent.func_vars.master_scale*(math.sqrt((self.x0 - self.curX)**2 + (self.y0 - self.curY)**2)),2)) + " ft")
+        self.parent.pane_eqmt_info.measurement_label.configure(text="Measurement: " + str(round(self.parent.func_vars.master_scale*(math.sqrt((self.x0 - self.curX)**2 + (self.y0 - self.curY)**2)),2)) + " ft")
     def get_current_n_start_mouse_pos(self, event):
         self.x0 = self.canvas.canvasx(event.x)
         self.y0 = self.canvas.canvasy(event.y)
@@ -322,6 +324,40 @@ class Editor(tkinter.Frame):
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
+
+    def drawing_barrier_leftMouseClick(self, event):
+        self.get_current_n_start_mouse_pos(event)
+        self.temp_line = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, fill='yellow', width=5)
+    def drawing_barrier_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.coords(self.temp_line, self.x0, self.y0, self.curX, self.curY)
+    def drawing_barrier_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.delete(self.temp_line)
+
+        barrier_name=self.parent.pane_eqmt_info.current_barrier[0]
+        tagged_objects = self.canvas.find_withtag(barrier_name)
+        for tagged_object in tagged_objects:
+            self.canvas.delete(tagged_object)
+        self.barPerm = self.canvas.create_line(self.x0, self.y0, self.curX, self.curY, tag=barrier_name, fill="purple", width=5)
+
+        self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=barrier_name, text=barrier_name, font=("arial.ttf", 15), fill='Black')
+
+        #update this one rcvr
+        for obj in self.parent.func_vars.barrier_list:
+            if obj.barrier_name == barrier_name:
+                obj.x0_coord = self.x0
+                obj.y0_coord = self.y0
+                obj.x1_coord = self.curX
+                obj.y1_coord = self.curY
+                obj.x0_coord *= round(self.parent.func_vars.master_scale, 2)
+                obj.y0_coord *= round(self.parent.func_vars.master_scale, 2)
+                obj.x1_coord *= round(self.parent.func_vars.master_scale, 2)
+                obj.y1_coord *= round(self.parent.func_vars.master_scale, 2)
+
+        self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_eqmt_info.generateRcvrTree()
+        self.parent.pane_eqmt_info.generateBarrierTree()
 
     def measureing_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
@@ -500,20 +536,22 @@ class Pane_Toolbox(tkinter.Frame):
         self.parent = parent
 
         self.button_set_image_scale = tkinter.Button(self, text="Set Image Scale", command=self.set_scale, font=(None, 15))
+        self.button_measure = tkinter.Button(self, text="Measure", command=self.measure, font=(None, 15))
         self.button_draw_equipment = tkinter.Button(self, text="Draw Equipment", command=self.draw_equipment, font=(None, 15))
         self.button_draw_receiver = tkinter.Button(self, text="Draw Receiver", command=self.draw_receiver, font=(None, 15))
-        self.button_measure = tkinter.Button(self, text="Measure", command=self.measure, font=(None, 15))
-        self.button_rotate_eqmt_drawing = tkinter.Button(self, text="Rotate Eqmt Drawing", command=self.rotate_eqmt_drawing, font=(None, 15))
-        self.button_move_eqmt_drawing = tkinter.Button(self, text="Move Eqmt Drawing", command=self.move_eqmt_drawing, font=(None, 15))
-        self.button_resize_eqmt_drawing = tkinter.Button(self, text="Resize Eqmt Drawing", command=self.resize_eqmt_drawing, font=(None, 15))
+        self.button_draw_barrier = tkinter.Button(self, text="Draw Barrier", command=self.draw_barrier, font=(None, 15))
+        self.button_rotate_eqmt_drawing = tkinter.Button(self, text="Eqmt Drawing - Rotate", command=self.rotate_eqmt_drawing, font=(None, 15))
+        self.button_move_eqmt_drawing = tkinter.Button(self, text="Eqmt Drawing - Move", command=self.move_eqmt_drawing, font=(None, 15))
+        self.button_resize_eqmt_drawing = tkinter.Button(self, text="Eqmt Drawing - Resize", command=self.resize_eqmt_drawing, font=(None, 15))
 
         self.button_set_image_scale.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_draw_equipment.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_draw_receiver.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_measure.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_rotate_eqmt_drawing.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_move_eqmt_drawing.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_resize_eqmt_drawing.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_measure.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
+        self.button_draw_equipment.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
+        self.button_draw_receiver.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
+        self.button_draw_barrier.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
+        self.button_rotate_eqmt_drawing.grid(row=0, column=2, sticky=tkinter.N + tkinter.W)
+        self.button_move_eqmt_drawing.grid(row=1, column=2, sticky=tkinter.N + tkinter.W)
+        self.button_resize_eqmt_drawing.grid(row=2, column=2, sticky=tkinter.N + tkinter.W)
 
     def set_scale(self):
         self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
@@ -535,6 +573,12 @@ class Pane_Toolbox(tkinter.Frame):
         self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove)
         self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease)
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Receiver')
+
+    def draw_barrier(self):
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_barrier_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_barrier_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_barrier_leftMouseRelease)
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Barrier')
 
     def measure(self):
         self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick)
@@ -577,37 +621,39 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
         self.exportList_button = tkinter.Button(self, text="Export Tag List", command=self.onExportListButton, font=(None, 15))
         self.scaleIndicatorLabel = tkinter.Label(self, text=scaleIndicatorLabelText, borderwidth=2, relief="solid", font=(None, 15))
-        self.equipment_list_label = tkinter.Label(self, text="Equipment", font=(None, 15))
         self.status_label = tkinter.Label(self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15))
-        self.measuremet_label = tkinter.Label(self, text="", borderwidth=2, relief="solid", font=(None, 15))
+        self.measurement_label = tkinter.Label(self, text="Measurement: ", borderwidth=2, relief="solid", font=(None, 15))
+        self.equipment_list_label = tkinter.Label(self, text="Equipment", font=(None, 15))
         self.receiver_list_label = tkinter.Label(self, text="Receivers", font=(None, 15))
+        self.barrier_list_label = tkinter.Label(self, text="Barriers", font=(None, 15))
         self.generateEqmtTree()
         self.generateRcvrTree()
         self.generateBarrierTree()
 
-        self.e1.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
-        self.exportList_button.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
-        self.scaleIndicatorLabel.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
-        self.status_label.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
-        self.measuremet_label.grid(row=4, column=1, pady=20, sticky=tkinter.N + tkinter.W)
-        self.equipment_list_label.grid(row=5, column=1, pady=20, sticky=tkinter.N)
-        self.equipment_tree.grid(row=6, column=1, sticky=tkinter.N + tkinter.W)
-        self.receiver_list_label.grid(row=7, column=1, pady=20, sticky=tkinter.N)
-        self.receiver_tree.grid(row=8, column=1, sticky=tkinter.N + tkinter.W)
-        self.barrier_tree.grid(row=9, column=1, sticky=tkinter.N + tkinter.W)
+        self.e1.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
+        self.exportList_button.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
+        self.scaleIndicatorLabel.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
+        self.status_label.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
+        self.measurement_label.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
+        self.equipment_list_label.grid(row=5, column=0, pady=10, sticky=tkinter.N + tkinter.W)
+        self.equipment_tree.grid(row=6, column=0, sticky=tkinter.N + tkinter.W)
+        self.receiver_list_label.grid(row=7, column=0, pady=10, sticky=tkinter.N+tkinter.W)
+        self.receiver_tree.grid(row=8, column=0, sticky=tkinter.N + tkinter.W)
+        self.barrier_list_label.grid(row=9, column=0, pady=10, sticky=tkinter.N+tkinter.W)
+        self.barrier_tree.grid(row=10, column=0, sticky=tkinter.N + tkinter.W)
 
     def generateEqmtTree(self):
         try: # delete tree if already exists
             self.equipment_tree.delete(*self.equipment_tree.get_children())
             self.equipment_tree_rows = []
             for i in self.parent.func_vars.equipment_list:
-                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.x_coord, i.y_coord, i.z_coord])
+                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
 
             for i, value in enumerate(self.equipment_tree_rows):
-                self.equipment_tree.insert("", "end", values=value)
+                self.equipment_tree.insert("", "end", values=value, tags=self.myFont)
 
         except:
-            self.equipment_tree_columns = ["count", "tag", "path", "make", "model", "sound_level", "sound_ref_dist", "x", "y", "z"]
+            self.equipment_tree_columns = ["count", "tag", "path", "make", "model", "sound_level", "sound_ref_dist", "IL", "x", "y", "z"]
             self.equipment_tree_rows = []
             self.maxWidths = []
 
@@ -617,7 +663,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
             #create wors with eqmt data
             for i in self.parent.func_vars.equipment_list:
-                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.x_coord, i.y_coord, i.z_coord])
+                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
             
             #getting max widths
             for col_idx in range(len(self.equipment_tree_rows[0])):
@@ -632,12 +678,11 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.equipment_tree = tkinter.ttk.Treeview(self, columns=self.equipment_tree_columns, show='headings')
 
             # add rows and colmns to tree
-            for col in self.equipment_tree_columns:
-                new_length = self.myFont.measure(str(col))
+            for col, maxWidth in zip(self.equipment_tree_columns, self.maxWidths):
                 self.equipment_tree.heading(col, text=col)
-                self.equipment_tree.column(col, minwidth=50, width=new_length+50, stretch=0)       
+                self.equipment_tree.column(col, minwidth=15, width=maxWidth+10, stretch=0)     
             for i, value in enumerate(self.equipment_tree_rows):
-                self.equipment_tree.insert("", "end", values=value)
+                self.equipment_tree.insert("", "end", values=value, tags=self.myFont)
                 #sizing
                 if i == len(self.equipment_tree_rows)-1:
                     for col in self.equipment_tree_columns:
@@ -652,7 +697,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             for i in self.parent.func_vars.receiver_list:
                 self.receiver_tree_rows.append([i.r_name, i.x_coord, i.y_coord, i.z_coord, i.sound_limit, i.predicted_sound_level])
             for i, value in enumerate(self.receiver_tree_rows):
-                self.receiver_tree.insert("", "end", values=value)
+                self.receiver_tree.insert("", "end", values=value, tags=self.myFont)
 
         except:
             self.receiver_tree_columns = ["R#", "x", "y", "z", "sound limit", "est. level"]
@@ -683,12 +728,9 @@ class Pane_Eqmt_Info(tkinter.Frame):
             # adding columns and rows
             for col, maxWidth in zip(self.receiver_tree_columns, self.maxWidths):
                 self.receiver_tree.heading(col, text=col)
-                self.receiver_tree.column(col, minwidth=50, width=maxWidth+20, stretch=0)       
+                self.receiver_tree.column(col, minwidth=15, width=maxWidth+10, stretch=0)       
             for i, value in enumerate(self.receiver_tree_rows):
-                self.receiver_tree.insert("", "end", values=value)
-
-        self.equipment_tree.bind('<ButtonRelease-1>', self.select_item_from_eqmt_tree)
-        self.receiver_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
+                self.receiver_tree.insert("", "end", values=value, tags=self.myFont)       
 
     def generateBarrierTree(self):
         try: # delete tree if already exists
@@ -725,16 +767,16 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.barrier_tree = tkinter.ttk.Treeview(self, columns=self.barrier_tree_columns, show='headings')
             
             # adding columns and rows
-            for col in self.barrier_tree_columns:
-                new_length = self.myFont.measure(str(col))
+            for col, maxWidth in zip(self.barrier_tree_columns, self.maxWidths):
                 self.barrier_tree.heading(col, text=col)
-                self.barrier_tree.column(col, minwidth=50, width=new_length+50, stretch=0)          
+                self.barrier_tree.column(col, minwidth=15, width=maxWidth+10, stretch=0)          
             for i, value in enumerate(self.barrier_tree_rows):
                 self.barrier_tree.insert("", "end", values=value, tags=self.myFont)
 
 
         self.equipment_tree.bind('<ButtonRelease-1>', self.select_item_from_eqmt_tree)
-        self.barrier_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
+        self.receiver_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
+        self.barrier_tree.bind('<ButtonRelease-1>', self.select_item_from_barrier_tree)
 
     def update_est_noise_levels(self):
         for rcvr in self.parent.func_vars.receiver_list:
@@ -774,19 +816,20 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.current_receiver = self.receiver_tree.item(self.current_receiver)['values']
         print(self.current_receiver)
 
+    def select_item_from_barrier_tree(self, event):
+        self.current_barrier = self.barrier_tree.focus()
+        self.current_barrier = self.barrier_tree.item(self.current_barrier)['values']
+        print(self.current_barrier)
+
     def onExportListButton(self):
         wb = openpyxl.load_workbook(XL_FILEPATH, keep_vba=True, data_only=False)
         ws = wb['Input LwA_XYZ']
 
         for obj in self.parent.func_vars.equipment_list:
             for row in ws.iter_rows(max_row=100):
-                print("row 1", row[1].value)
                 if row[1].value == None:
-                    print("row 1", row[1].value)
                     break
                 if row[1].value.replace(" ","-") == obj.eqmt_tag.replace(" ", "-"):
-                    print("rplacing eqmt")
-                    print("row 9", row[9].value)
                     row[9].value = obj.x_coord
                     row[10].value = obj.y_coord
 
@@ -795,9 +838,18 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 if row[15].value == None:
                     break
                 if row[15].value.replace(" ","-") == obj.r_name.replace(" ", "-"):
-                    print("row 16", row[16].value)
                     row[16].value = obj.x_coord
                     row[17].value = obj.y_coord
+        
+        for obj in self.parent.func_vars.barrier_list:
+            for row in ws.iter_rows(min_row=24, max_row=100):
+                if row[15].value == None:
+                    break
+                if row[15].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
+                    row[16].value = obj.x0_coord
+                    row[17].value = obj.y0_coord
+                    row[19].value = obj.x1_coord
+                    row[20].value = obj.y1_coord
 
         # saving scale
         ws['U20'] = self.parent.func_vars.known_distance_ft
