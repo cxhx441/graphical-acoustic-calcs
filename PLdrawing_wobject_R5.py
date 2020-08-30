@@ -26,6 +26,7 @@ class FuncVars(object):
         for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, insertion_loss, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['I'], ws['J'], ws['K'], ws['L'] ):
             if count.value == "Number of Units": continue
             if count.value == None: break
+            print(z_coord.value)
             self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, insertion_loss.value, x_coord.value, y_coord.value, z_coord.value))
 
         #initialize rcvr list
@@ -780,6 +781,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
     def update_est_noise_levels(self):
         for rcvr in self.parent.func_vars.receiver_list:
+            print(f"r_name: {rcvr.r_name} x: {rcvr.x_coord}, y: {rcvr.y_coord}, z: {rcvr.z_coord}")
             sound_pressure = 0
             for eqmt in self.parent.func_vars.equipment_list:
                 if eqmt.sound_ref_dist == 0:
@@ -791,16 +793,18 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     b = q/(4*math.pi*r**2)
                     sound_power = lp + abs(10*math.log10(b))
                 distance = math.sqrt((rcvr.x_coord-eqmt.x_coord)**2 + (rcvr.y_coord - eqmt.y_coord)**2 + (rcvr.z_coord - eqmt.z_coord)**2)
-                print("rcvr", rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
-                print("eqmt", eqmt.x_coord, eqmt.y_coord, eqmt.z_coord)
-                print(sound_power, distance)
+                # print("rcvr", rcvr.x_coord, rcvr.y_coord, rcvr.z_coord,)
+                
+                # print(sound_power, distance)
                 try:
-                    spl = sound_power-20*math.log10(distance/3.28)-8
+                    # print(eqmt.insertion_loss)
+                    attenuation = 20*math.log10(distance/3.28)+8
+                    spl = sound_power-eqmt.insertion_loss-attenuation
                 except ValueError:
                     print('MATH DOMAIN ERROR OCCURED')
                     spl = 1000
-
                 sound_pressure += 10**(spl/10)
+                print(f"eqmt, x: {eqmt.x_coord}, y: {eqmt.y_coord}, z: {eqmt.z_coord}, lwa: {round(sound_power,0)}, IL: {round(eqmt.insertion_loss,0)}, distance: {round(distance,1)}, attenuation: {round(attenuation,1)}")
             rcvr.predicted_sound_level = round(10*math.log10(sound_pressure),1)
             if rcvr.r_name == "R1":
                 print(f"predicted sound level: {rcvr.predicted_sound_level}")
