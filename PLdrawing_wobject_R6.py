@@ -166,7 +166,7 @@ class Editor(tkinter.Frame):
         self.hScrollbar.grid(row=1, column=0, sticky=tkinter.E + tkinter.W)
         '''scroll bar setup'''
 
-        '''initialize receivers and equipment boxes'''
+        '''initialize receivers and equipment boxes and barriers'''
         for eqmt in self.parent.func_vars.equipment_list:
             random_8bit_color = CraigsFunFunctions.random_8bit_color()
             offset = 20
@@ -184,7 +184,17 @@ class Editor(tkinter.Frame):
             # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
             self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=rcvr.r_name, fill=random_8bit_color, activeoutline='red')
             self.canvas.create_text(x, y, tag=rcvr.r_name, text=rcvr.r_name, font=("arial.ttf", 15), fill='Black')
-        '''initialize receivers and equipment boxes'''
+        
+        for bar in self.parent.func_vars.barrier_list: 
+            x0 = bar.x0_coord/self.parent.func_vars.master_scale
+            y0 = bar.y0_coord/self.parent.func_vars.master_scale
+            x1 = bar.x1_coord/self.parent.func_vars.master_scale
+            y1 = bar.y1_coord/self.parent.func_vars.master_scale
+            self.linePerm = self.canvas.create_line(x0, y0, x1, y1, tag=bar.barrier_name, fill="purple", width=5)
+            self.canvas.create_text(x0 + (x1-x0)/2, y0 + (y1 - y0)/2, tag=bar.barrier_name, text=bar.barrier_name, font=("arial.ttf", 15), fill='Black')
+
+        
+        '''initialize receivers and equipment boxes and barriers'''
 
         self.temp_rect = None
         self.temp_line = None
@@ -781,6 +791,44 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.receiver_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
         self.barrier_tree.bind('<ButtonRelease-1>', self.select_item_from_barrier_tree)
 
+    def barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z): 
+        m_source2receiver = (rcvr_y-eqmt_y)/(rcvr_x-eqmt_x)
+        m_bar_start2end = (bar_y0-bar_y1)/(bar_x0-bar_x1)
+        b_source2receiver = eqmt_y-(eqmt_x*m_source2receiver)
+        b_bar_start2end = bar_y0-(bar_x0*m_bar_start2end)
+        intersection_x = (b_bar_start2end-b_source2receiver)/(m_source2receiver-m_bar_start2end)
+        intersection_y = m_source2receiver*intersection_x+b_source2receiver
+
+        bar_min_z = min(bar_z0, bar_z1)
+        bar_height_difference = abs(bar_z0-bar_z1)
+        bar_length = CraigsFunFunctions.distance_formula(x0=bar_x0, y0=bar_y0, x1=bar_x1, y1=bar_y1)
+        bar_slope = bar_height_difference/bar_length
+        if bar_z0 <= bar_z1:
+                bar_dist2barxpoint = CraigsFunFunctions.distance_formula(x0=intersection_x , y0=intersection_y, x1=bar_x0, y1=bar_y0)
+        else:
+                bar_dist2barxpoint = CraigsFunFunctions.distance_formula(x0=intersection_x , y0=intersection_y, x1=bar_x1, y1=bar_y1)
+
+        bar_height_to_use = bar_slope*bar_dist2barxpoint+bar_min_z
+
+
+        distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
+        distance_source2bar_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=intersection_x, y1=intersection_y)
+        distance_barrier2receiever_straight = distance_source2receiver_horizontal - distance_source2bar_horizontal
+        distance_source2receiver_propogation = math.sqrt(distance_source2receiver_horizontal**2+(rcvr_z-eqmt_z)**2)
+        distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
+        distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
+        path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
+
+        PLD = [0.5, 1, 2, 3, 6, 12]
+        barrier_reduction = [0, 4, 7, 10, 12, 15, 17]
+
+        pld_difference = [abs(path_length_difference - x) for x in PLD]
+        nearest_pld = min(pld_difference)
+
+        barrier_IL = barrier_reduction[PLD.index(nearest_pld)]
+
+        return barrier_IL
+
     def update_est_noise_levels(self):
         for rcvr in self.parent.func_vars.receiver_list:
             print(f"r_name: {rcvr.r_name} x: {rcvr.x_coord}, y: {rcvr.y_coord}, z: {rcvr.z_coord}")
@@ -803,6 +851,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     q = eqmt.installed_q
                     r = distance*0.308
                     attenuation = abs(10*math.log10(q/(4*math.pi*r**2)))
+                    #barrier_IL = self.barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, self.parent.func_vars.barrier_list[1].x0_coord, self.parent.func_vars.barrier_list[1].y0_coord, self.parent.func_vars.barrier_list[1].z0_coord, self.parent.func_vars.barrier_list[1].x1_coord, self.parent.func_vars.barrier_list[1].y1_coord, self.parent.func_vars.barrier_list[1].z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
+                    #print(f"eqmt: {eqmt.eqmt_tag}, rcvr: {rcvr.r_name}, barrier IL: {barrier_IL}")
                     spl = sound_power-eqmt.insertion_loss-attenuation
                 except ValueError:
                     print('MATH DOMAIN ERROR OCCURED')
