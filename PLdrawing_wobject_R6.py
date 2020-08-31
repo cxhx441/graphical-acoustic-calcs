@@ -14,6 +14,8 @@ BED_IMAGE_FILEPATH = "PDFXEdit_2020-08-25_19-36-01.png"
 TOP_IMAGE_FILEPATH = "PDFXEdit_2020-08-25_19-36-01.png"
 XL_FILEPATH = 'B56 - VRF_Rooftop Amenity Investigation - 2020.08.17.xlsm'
 
+TAKE_BARRIER = True
+
 class FuncVars(object):
     def __init__(self, parent):
         self.parent = parent
@@ -660,13 +662,13 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.equipment_tree.delete(*self.equipment_tree.get_children())
             self.equipment_tree_rows = []
             for i in self.parent.func_vars.equipment_list:
-                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
+                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, tested_q, installed_q,  i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
 
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value, tags=self.myFont)
 
         except:
-            self.equipment_tree_columns = ["count", "tag", "path", "make", "model", "sound_level", "sound_ref_dist", "IL", "x", "y", "z"]
+            self.equipment_tree_columns = ["count", "tag", "path", "make", "model", "sound_level", "sound_ref_dist", "Q (tested)", "Q (installed)", "IL", "x", "y", "z"]
             self.equipment_tree_rows = []
             self.maxWidths = []
 
@@ -676,7 +678,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
             #create wors with eqmt data
             for i in self.parent.func_vars.equipment_list:
-                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
+                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.tested_q, i.installed_q, i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
             
             #getting max widths
             for col_idx in range(len(self.equipment_tree_rows[0])):
@@ -818,14 +820,16 @@ class Pane_Eqmt_Info(tkinter.Frame):
         distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
         distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
         path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
-
-        PLD = [0.5, 1, 2, 3, 6, 12]
+              
+        pld_list = [0, 0.5, 1, 2, 3, 6, 12]
         barrier_reduction = [0, 4, 7, 10, 12, 15, 17]
 
-        pld_difference = [abs(path_length_difference - x) for x in PLD]
+        pld_difference = [abs(path_length_difference - x) for x in pld_list]
+        
         nearest_pld = min(pld_difference)
 
-        barrier_IL = barrier_reduction[PLD.index(nearest_pld)]
+        pld_idx = pld_difference.index(nearest_pld)
+        barrier_IL = barrier_reduction[pld_idx]
 
         return barrier_IL
 
@@ -851,14 +855,17 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     q = eqmt.installed_q
                     r = distance*0.308
                     attenuation = abs(10*math.log10(q/(4*math.pi*r**2)))
-                    #barrier_IL = self.barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, self.parent.func_vars.barrier_list[1].x0_coord, self.parent.func_vars.barrier_list[1].y0_coord, self.parent.func_vars.barrier_list[1].z0_coord, self.parent.func_vars.barrier_list[1].x1_coord, self.parent.func_vars.barrier_list[1].y1_coord, self.parent.func_vars.barrier_list[1].z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
-                    #print(f"eqmt: {eqmt.eqmt_tag}, rcvr: {rcvr.r_name}, barrier IL: {barrier_IL}")
-                    spl = sound_power-eqmt.insertion_loss-attenuation
+                    if TAKE_BARRIER == True: 
+                        barrier_IL = self.barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, self.parent.func_vars.barrier_list[1].x0_coord, self.parent.func_vars.barrier_list[1].y0_coord, self.parent.func_vars.barrier_list[1].z0_coord, self.parent.func_vars.barrier_list[1].x1_coord, self.parent.func_vars.barrier_list[1].y1_coord, self.parent.func_vars.barrier_list[1].z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
+                    else: 
+                        barrier_IL = 0
+                    spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
+                    print(f"eqmt: {eqmt.eqmt_tag}, rcvr: {rcvr.r_name}, barrier IL: {barrier_IL}")
                 except ValueError:
                     print('MATH DOMAIN ERROR OCCURED')
                     spl = 1000
                 sound_pressure += 10**(spl/10)
-                print(f"eqmt, x: {eqmt.x_coord}, y: {eqmt.y_coord}, z: {eqmt.z_coord}, lwa: {round(sound_power,0)}, IL: {round(eqmt.insertion_loss,0)}, distance: {round(distance,1)}, attenuation: {round(attenuation,1)}")
+                # print(f"eqmt, x: {eqmt.x_coord}, y: {eqmt.y_coord}, z: {eqmt.z_coord}, lwa: {round(sound_power,0)}, IL: {round(eqmt.insertion_loss,0)}, distance: {round(distance,1)}, attenuation: {round(attenuation,1)}")
             rcvr.predicted_sound_level = round(10*math.log10(sound_pressure),1)
             if rcvr.r_name == "R1":
                 print(f"predicted sound level: {rcvr.predicted_sound_level}")
