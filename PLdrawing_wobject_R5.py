@@ -23,30 +23,30 @@ class FuncVars(object):
 
         #initialize eqmt list
         self.equipment_list = list()
-        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, insertion_loss, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['I'], ws['J'], ws['K'], ws['L'] ):
+        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, tested_q, installed_q, insertion_loss, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['H'], ws['J'], ws['K'], ws['L'], ws['M'], ws['N'] ):
             if count.value == "Number of Units": continue
             if count.value == None: break
             print(z_coord.value)
-            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, insertion_loss.value, x_coord.value, y_coord.value, z_coord.value))
+            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, tested_q.value, installed_q.value, insertion_loss.value, x_coord.value, y_coord.value, z_coord.value))
 
         #initialize rcvr list
         self.receiver_list = list()
-        for r_name, x_coord, y_coord, z_coord, sound_limit in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T']):
+        for r_name, x_coord, y_coord, z_coord, sound_limit in zip(ws['R'], ws['S'], ws['T'], ws['U'], ws['V']):
             if r_name.value == "R#": continue
             if r_name.value == None: break
             self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
 
         #initialize barrier list
         self.barrier_list = list()
-        for barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord in zip(ws['P'], ws['Q'], ws['R'], ws['S'], ws['T'], ws['U'], ws['V']):
+        for barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord in zip(ws['R'], ws['S'], ws['T'], ws['U'], ws['V'], ws['W'], ws['X']):
             if int(barrier_name.coordinate[1:]) < 24: continue
             if barrier_name.value == None: break
             self.barrier_list.append(Barrier(str(barrier_name.value), x0_coord.value, y0_coord.value, z0_coord.value, x1_coord.value, y1_coord.value, z1_coord.value))
 
         #initialize master_scale
         self.old_master_scale = 1.0
-        self.known_distance_ft = ws['U20'].value if ws['U20'].value != None else 1.0
-        self.scale_line_distance_px = ws['V20'].value if ws['V20'].value != None else 1.0
+        self.known_distance_ft = ws['W20'].value if ws['W20'].value != None else 1.0
+        self.scale_line_distance_px = ws['X20'].value if ws['X20'].value != None else 1.0
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
@@ -78,7 +78,7 @@ class FuncVars(object):
         self.parent.pane_eqmt_info.generateEqmtTree()
 
 class Equipment(object):
-    def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, insertion_loss, x_coord, y_coord, z_coord):
+    def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, tested_q, installed_q, insertion_loss, x_coord, y_coord, z_coord):
         self.count = count
         self.eqmt_tag = eqmt_tag.replace(" ", "-")
         self.path = path
@@ -86,6 +86,8 @@ class Equipment(object):
         self.model = model
         self.sound_level = sound_level if sound_level != None else 0
         self.sound_ref_dist = sound_ref_dist if sound_ref_dist != None else 0
+        self.tested_q = tested_q
+        self.installed_q = installed_q
         self.insertion_loss = insertion_loss if insertion_loss != None else 0
         self.x_coord = x_coord if x_coord != None else 0
         self.y_coord = y_coord if y_coord != None else 0
@@ -787,7 +789,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 if eqmt.sound_ref_dist == 0:
                     sound_power = eqmt.sound_level
                 else:
-                    q = 2 #need to update this
+                    q = eqmt.tested_q #need to update this
                     r = eqmt.sound_ref_dist*0.308
                     lp = eqmt.sound_level
                     b = q/(4*math.pi*r**2)
@@ -798,7 +800,9 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 # print(sound_power, distance)
                 try:
                     # print(eqmt.insertion_loss)
-                    attenuation = 20*math.log10(distance/3.28)+8
+                    q = eqmt.installed_q
+                    r = distance*0.308
+                    attenuation = abs(10*math.log10(q/(4*math.pi*r**2)))
                     spl = sound_power-eqmt.insertion_loss-attenuation
                 except ValueError:
                     print('MATH DOMAIN ERROR OCCURED')
@@ -834,30 +838,30 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 if row[1].value == None:
                     break
                 if row[1].value.replace(" ","-") == obj.eqmt_tag.replace(" ", "-"):
-                    row[9].value = obj.x_coord
-                    row[10].value = obj.y_coord
+                    row[11].value = obj.x_coord
+                    row[12].value = obj.y_coord
 
         for obj in self.parent.func_vars.receiver_list:
             for row in ws.iter_rows(max_row=100):
-                if row[15].value == None:
+                if row[17].value == None:
                     break
-                if row[15].value.replace(" ","-") == obj.r_name.replace(" ", "-"):
-                    row[16].value = obj.x_coord
-                    row[17].value = obj.y_coord
+                if row[17].value.replace(" ","-") == obj.r_name.replace(" ", "-"):
+                    row[18].value = obj.x_coord
+                    row[19].value = obj.y_coord
         
         for obj in self.parent.func_vars.barrier_list:
             for row in ws.iter_rows(min_row=24, max_row=100):
-                if row[15].value == None:
+                if row[17].value == None:
                     break
-                if row[15].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
-                    row[16].value = obj.x0_coord
-                    row[17].value = obj.y0_coord
-                    row[19].value = obj.x1_coord
-                    row[20].value = obj.y1_coord
+                if row[17].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
+                    row[18].value = obj.x0_coord
+                    row[19].value = obj.y0_coord
+                    row[21].value = obj.x1_coord
+                    row[22].value = obj.y1_coord
 
         # saving scale
-        ws['U20'] = self.parent.func_vars.known_distance_ft
-        ws['V20'] = self.parent.func_vars.scale_line_distance_px
+        ws['W20'] = self.parent.func_vars.known_distance_ft
+        ws['X20'] = self.parent.func_vars.scale_line_distance_px
 
         print("saving")
         wb.save(filename=XL_FILEPATH)
