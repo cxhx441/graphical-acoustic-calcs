@@ -50,7 +50,7 @@ class FuncVars(object):
         self.known_distance_ft = ws['W20'].value if ws['W20'].value != None else 1.0
         self.scale_line_distance_px = ws['X20'].value if ws['X20'].value != None else 1.0
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
-
+    
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
         self.known_distance_ft = known_distance_ft
@@ -474,76 +474,108 @@ class Editor(tkinter.Frame):
         self.canvas.tag_lower("eqmt_drawing")
         self.canvas.tag_lower("bed_layer")
 
-
     def shift_click(self, event):
         if self.canvas.find_withtag("current"):
-            self.eqmt_rcvr_tagged = self.canvas.gettags("current")
-            self.tag_or_rcvr_num = self.eqmt_rcvr_tagged[0]
-            self.eqmt_rcvr_ids = self.canvas.find_withtag(self.eqmt_rcvr_tagged[0])
-            self.current_rect = self.eqmt_rcvr_ids[0]
-            self.current_text = self.eqmt_rcvr_ids[1]
-            self.current_rect_coords = self.canvas.coords(self.current_rect)
+            self.eqmt_rcvr_or_barr_tagged = self.canvas.gettags("current")
+            self.tag_rcvr_or_barr_num = self.eqmt_rcvr_or_barr_tagged[0]
+            self.eqmt_rcvr_barr_ids = self.canvas.find_withtag(self.eqmt_rcvr_or_barr_tagged[0])
+            self.current_shape = self.eqmt_rcvr_barr_ids[0]
+            self.current_text = self.eqmt_rcvr_barr_ids[1]
+            self.current_shape_coords = self.canvas.coords(self.current_shape)
             self.current_text_coords = self.canvas.coords(self.current_text)
 
             self.get_current_n_start_mouse_pos(event)
 
         for obj in self.parent.func_vars.equipment_list:
-            if obj.eqmt_tag == self.tag_or_rcvr_num:
+            if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
                 self.obj_x_coord_0 = obj.x_coord
                 self.obj_y_coord_0 = obj.y_coord
 
         for obj in self.parent.func_vars.receiver_list:
-            if obj.r_name == self.tag_or_rcvr_num:
+            if obj.r_name == self.tag_rcvr_or_barr_num:
                 self.obj_x_coord_0 = obj.x_coord
                 self.obj_y_coord_0 = obj.y_coord
+        
+        for obj in self.parent.func_vars.barrier_list:
+            if obj.barrier_name == self.tag_rcvr_or_barr_num:
+                self.obj_x_coord_0 = obj.x0_coord
+                self.obj_y_coord_0 = obj.y0_coord
+                self.obj_x_coord_1 = obj.x1_coord
+                self.obj_y_coord_1 = obj.y1_coord
+
     def shift_click_move(self, event):
         self.get_current_mouse_pos(event)
         x_shifter = self.curX - self.x0
         y_shifter = self.curY - self.y0
-        self.canvas.coords(self.current_rect, self.current_rect_coords[0]+x_shifter, self.current_rect_coords[1]+y_shifter, self.current_rect_coords[2]+x_shifter, self.current_rect_coords[3]+y_shifter)
+        self.canvas.coords(self.current_shape, self.current_shape_coords[0]+x_shifter, self.current_shape_coords[1]+y_shifter, self.current_shape_coords[2]+x_shifter, self.current_shape_coords[3]+y_shifter)
         self.canvas.coords(self.current_text, self.current_text_coords[0]+x_shifter, self.current_text_coords[1]+y_shifter)
 
         for obj in self.parent.func_vars.equipment_list:
-            if obj.eqmt_tag == self.tag_or_rcvr_num:
+            if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
                 obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
                 obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
         for obj in self.parent.func_vars.receiver_list:
-            if obj.r_name == self.tag_or_rcvr_num:
+            if obj.r_name == self.tag_rcvr_or_barr_num:
                 obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
                 obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
+        
+        for obj in self.parent.func_vars.barrier_list:
+            if obj.barrier_name == self.tag_rcvr_or_barr_num:
+                obj.x0_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
+                obj.y0_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
+                obj.x1_coord = self.obj_x_coord_1 + x_shifter*self.parent.func_vars.master_scale
+                obj.y1_coord = self.obj_y_coord_1 + y_shifter*self.parent.func_vars.master_scale
+                obj.x0_coord = round(obj.x0_coord, 2)
+                obj.y0_coord = round(obj.y0_coord, 2)
+                obj.x1_coord = round(obj.x1_coord, 2)
+                obj.y1_coord = round(obj.y1_coord, 2)
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateEqmtTree()
         self.parent.pane_eqmt_info.generateRcvrTree()
+        self.parent.pane_eqmt_info.generateBarrierTree()
     def shift_click_release(self, event):
         self.get_current_mouse_pos(event)
         x_shifter = self.curX - self.x0
         y_shifter = self.curY - self.y0
-        self.canvas.coords(self.current_rect, self.current_rect_coords[0]+x_shifter, self.current_rect_coords[1]+y_shifter, self.current_rect_coords[2]+x_shifter, self.current_rect_coords[3]+y_shifter)
+        self.canvas.coords(self.current_shape, self.current_shape_coords[0]+x_shifter, self.current_shape_coords[1]+y_shifter, self.current_shape_coords[2]+x_shifter, self.current_shape_coords[3]+y_shifter)
         self.canvas.coords(self.current_text, self.current_text_coords[0]+x_shifter, self.current_text_coords[1]+y_shifter)
 
         for obj in self.parent.func_vars.equipment_list:
-            if obj.eqmt_tag == self.tag_or_rcvr_num:
+            if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
                 obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
                 obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
         for obj in self.parent.func_vars.receiver_list:
-            if obj.r_name == self.tag_or_rcvr_num:
+            if obj.r_name == self.tag_rcvr_or_barr_num:
                 obj.x_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
                 obj.y_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
+        for obj in self.parent.func_vars.barrier_list:
+            if obj.barrier_name == self.tag_rcvr_or_barr_num:
+                obj.x0_coord = self.obj_x_coord_0 + x_shifter*self.parent.func_vars.master_scale
+                obj.y0_coord = self.obj_y_coord_0 + y_shifter*self.parent.func_vars.master_scale
+                obj.x1_coord = self.obj_x_coord_1 + x_shifter*self.parent.func_vars.master_scale
+                obj.y1_coord = self.obj_y_coord_1 + y_shifter*self.parent.func_vars.master_scale
+                obj.x0_coord = round(obj.x0_coord, 2)
+                obj.y0_coord = round(obj.y0_coord, 2)
+                obj.x1_coord = round(obj.x1_coord, 2)
+                obj.y1_coord = round(obj.y1_coord, 2)
+
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateEqmtTree()
         self.parent.pane_eqmt_info.generateRcvrTree()
+        self.parent.pane_eqmt_info.generateBarrierTree()
+
 
 class Pane_Toolbox(tkinter.Frame):
     def __init__(self, parent):
@@ -662,8 +694,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.equipment_tree.delete(*self.equipment_tree.get_children())
             self.equipment_tree_rows = []
             for i in self.parent.func_vars.equipment_list:
-                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, tested_q, installed_q,  i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
-
+                self.equipment_tree_rows.append([i.count, i.eqmt_tag, i.path, i.make, i.model, i.sound_level, i.sound_ref_dist, i.tested_q, i.installed_q,  i.insertion_loss, i.x_coord, i.y_coord, i.z_coord])
+        
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value, tags=self.myFont)
 
@@ -695,7 +727,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             # add rows and colmns to tree
             for col, maxWidth in zip(self.equipment_tree_columns, self.maxWidths):
                 self.equipment_tree.heading(col, text=col)
-                self.equipment_tree.column(col, minwidth=15, width=maxWidth+10, stretch=0)     
+                self.equipment_tree.column(col, minwidth=15, width=maxWidth+25, stretch=0)     
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value, tags=self.myFont)
                 #sizing
@@ -743,7 +775,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             # adding columns and rows
             for col, maxWidth in zip(self.receiver_tree_columns, self.maxWidths):
                 self.receiver_tree.heading(col, text=col)
-                self.receiver_tree.column(col, minwidth=15, width=maxWidth+10, stretch=0)       
+                self.receiver_tree.column(col, minwidth=15, width=maxWidth+25, stretch=0)       
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value, tags=self.myFont)       
 
@@ -784,7 +816,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             # adding columns and rows
             for col, maxWidth in zip(self.barrier_tree_columns, self.maxWidths):
                 self.barrier_tree.heading(col, text=col)
-                self.barrier_tree.column(col, minwidth=15, width=maxWidth+10, stretch=0)          
+                self.barrier_tree.column(col, minwidth=15, width=maxWidth+25, stretch=0)          
             for i, value in enumerate(self.barrier_tree_rows):
                 self.barrier_tree.insert("", "end", values=value, tags=self.myFont)
 
@@ -793,7 +825,21 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.receiver_tree.bind('<ButtonRelease-1>', self.select_item_from_rcvr_tree)
         self.barrier_tree.bind('<ButtonRelease-1>', self.select_item_from_barrier_tree)
 
+    def ari_interpolation(self, pld, lowerIL, upperIL, lowerPLD, upperPLD): 
+        diff_in_reduction = (pld-lowerPLD)/(upperPLD-lowerPLD)
+        change_IL = upperIL - lowerIL
+        barrier_IL = lowerIL + change_IL*diff_in_reduction
+        return int(round(barrier_IL,0))
+
     def barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z): 
+        #testing if line of sight is broken along horizontal plane
+        eqmt_point = CraigsFunFunctions.Point(eqmt_x, eqmt_y)
+        receiver_point = CraigsFunFunctions.Point(rcvr_x, rcvr_y)
+        bar_start_point = CraigsFunFunctions.Point(bar_x0, bar_y0)
+        bar_end_point = CraigsFunFunctions.Point(bar_x1, bar_y1)
+        if not CraigsFunFunctions.doIntersect(eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            return 0
+
         m_source2receiver = (rcvr_y-eqmt_y)/(rcvr_x-eqmt_x)
         m_bar_start2end = (bar_y0-bar_y1)/(bar_x0-bar_x1)
         b_source2receiver = eqmt_y-(eqmt_x*m_source2receiver)
@@ -812,6 +858,9 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
         bar_height_to_use = bar_slope*bar_dist2barxpoint+bar_min_z
 
+        # testing if line of sight is broken vertically
+        if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
+            return 0
 
         distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
         distance_source2bar_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=intersection_x, y1=intersection_y)
@@ -820,17 +869,25 @@ class Pane_Eqmt_Info(tkinter.Frame):
         distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
         distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
         path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
-              
-        pld_list = [0, 0.5, 1, 2, 3, 6, 12]
-        barrier_reduction = [0, 4, 7, 10, 12, 15, 17]
 
-        pld_difference = [abs(path_length_difference - x) for x in pld_list]
-        
-        nearest_pld = min(pld_difference)
-
-        pld_idx = pld_difference.index(nearest_pld)
-        barrier_IL = barrier_reduction[pld_idx]
-
+        pld = path_length_difference
+        if 0 < pld and pld <= 0.5:
+            barrier_IL = self.ari_interpolation(pld, 0, 4, 0, 0.5)
+        elif 0.5 < pld and pld <= 1:
+            barrier_IL = self.ari_interpolation(pld, 4, 7, 0.5, 1)
+        elif 1 < pld and pld <= 2:
+            barrier_IL = self.ari_interpolation(pld, 7, 10, 1, 2)
+        elif 2 < pld and pld <= 3:
+            barrier_IL = self.ari_interpolation(pld, 10, 12, 2, 3)
+        elif 3 < pld and pld <= 6:
+            barrier_IL = self.ari_interpolation(pld, 12, 15, 3, 6)
+        elif 6 < pld and pld <= 12:
+            barrier_IL = self.ari_interpolation(pld, 15, 17, 6, 12)
+        elif 12 < pld:
+            barrier_IL = 17
+        else: 
+            barrier_IL = 0 
+            
         return barrier_IL
 
     def update_est_noise_levels(self):
@@ -855,10 +912,12 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     q = eqmt.installed_q
                     r = distance*0.308
                     attenuation = abs(10*math.log10(q/(4*math.pi*r**2)))
-                    if TAKE_BARRIER == True: 
-                        barrier_IL = self.barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, self.parent.func_vars.barrier_list[1].x0_coord, self.parent.func_vars.barrier_list[1].y0_coord, self.parent.func_vars.barrier_list[1].z0_coord, self.parent.func_vars.barrier_list[1].x1_coord, self.parent.func_vars.barrier_list[1].y1_coord, self.parent.func_vars.barrier_list[1].z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
-                    else: 
-                        barrier_IL = 0
+                    barrier_IL = 0 
+                    if TAKE_BARRIER == True:
+                        for bar in self.parent.func_vars.barrier_list:
+                            barrier_IL_test = self.barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
+                            if barrier_IL_test > barrier_IL:
+                                barrier_IL = barrier_IL_test
                     spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
                     print(f"eqmt: {eqmt.eqmt_tag}, rcvr: {rcvr.r_name}, barrier IL: {barrier_IL}")
                 except ValueError:
