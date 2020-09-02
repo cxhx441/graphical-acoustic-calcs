@@ -677,6 +677,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.generateRcvrTree()
         self.generateBarrierTree()
 
+        # self.equipment_tree.bind("<Double-1>", self.open_eqmt_editor_window)
+        # self.receiver_tree.bind("<Double-1>", self.open_rcvr_editor_window)
+        # self.barrier_tree.bind("<Double-1>", self.open_bar_editor_window)
+
         self.e1.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
         self.exportList_button.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
         self.scaleIndicatorLabel.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
@@ -735,7 +739,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     for col in self.equipment_tree_columns:
                         if col in ("eqmt_tag", "model"):
                             width_mult = 10
-                            self.equipment_tree.column(col, minwidth=20, width=len(value)*width_mult, stretch=0)          
+                            self.equipment_tree.column(col, minwidth=20, width=len(value)*width_mult, stretch=0)         
 
     def generateRcvrTree(self):
         try: # delete tree if already exists
@@ -991,6 +995,28 @@ class Pane_Eqmt_Info(tkinter.Frame):
         e1_text = self.e1.get()
         self.e1.selection_range(0, len(e1_text))
 
+    # def save_changes(self, event):
+    #     attributesList = ["r_name", "x_coord", "y_coord", "z_coord", "sound_limit", "predicted_sound_level"]
+    #     for attr in attributesList: 
+    #         curItem = self.attr_input(id=attr).get()
+    #         print(curItem)
+
+
+    # def open_rcvr_editor_window(self, event):
+    #     newWindow = tkinter.Toplevel()
+    #     newWindow.title("rcvr editor")
+    #     newWindow.geometry("400x400")
+    #     attributesList = ["r_name", "x_coord", "y_coord", "z_coord", "sound_limit", "predicted_sound_level"]
+    #     for i, attr in enumerate(attributesList):
+    #         self.attr_label = tkinter.Label(newWindow, text=attr, borderwidth=2, font=(None, 15)) 
+    #         self.attr_input = tkinter.Entry(newWindow, font=(None, 15), width=24, id=attr)
+    #         self.attr_input.insert(0, self.current_receiver[i])
+    #         self.attr_label.grid(row=i, column=0, sticky=tkinter.N + tkinter.E)
+    #         self.attr_input.grid(row=i, column=1, sticky=tkinter.N + tkinter.W)
+    #     self.save_changes_button = tkinter.Button(newWindow, text="Save Changes", command=self.save_changes, font=(None, 15))
+    #     self.save_changes_button.grid(row=len(attributesList, sticky=tkinter.N))
+
+
 class Main_Application(tkinter.Frame):
     def __init__(self, parent):
         tkinter.Frame.__init__(self) # , parent
@@ -1011,6 +1037,7 @@ def main():
     mainApp.pack(side="top", fill="both", expand=True)
     root.geometry('+0+0') #puts window in top left
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
