@@ -1077,7 +1077,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
                     spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
                     # if barriermethod == ' - OB_fresnel':
-                    print(f"eqmt: ,{eqmt.eqmt_tag}, rcvr: ,{rcvr.r_name}, bar: ,{used_barrier_name}, barrier IL: ,{barrier_IL}")
+                    print(f"eqmt: __{eqmt.eqmt_tag}, rcvr: __{rcvr.r_name}, bar: __{used_barrier_name}, barrier IL: __{barrier_IL}")
                 except ValueError:
                     print('MATH DOMAIN ERROR OCCURED')
                     spl = 1000
@@ -1138,8 +1138,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 if row[25].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
                     row[26].value = obj.x0_coord
                     row[27].value = obj.y0_coord
+                    row[28].value = obj.z0_coord
                     row[29].value = obj.x1_coord
                     row[30].value = obj.y1_coord
+                    row[31].value = obj.z1_coord
 
         # saving scale
         ws['W20'] = self.parent.func_vars.known_distance_ft
