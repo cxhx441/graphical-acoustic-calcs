@@ -9,6 +9,7 @@ sys.path.append('C:/Users/cxhx4/Dropbox/00 - Cloud Documents/06 - Python Scripts
 import CraigsFunFunctions
 import numpy
 import tkinter.font
+import acoustics
 
 BED_IMAGE_FILEPATH = "bed_image.png"
 TOP_IMAGE_FILEPATH = "top_image.png"
@@ -16,44 +17,88 @@ XL_FILEPATH = 'Aegis San Rafael - PL (revised) - 2020.08.17.xlsm'
 XL_FILEPATH_SAVE = 'Aegis San Rafael - PL (revised) - 2020.08.17 - exported.xlsm'
 
 TAKE_ARI_BARRIER = True
-TAKE_ARI_BARRIER = False
+TAKE_OB_FRESNAL_BARRIER = True
 
 # if TAKE_ARI_BARRIER == True and TAKE_OB_BARRIER == True:
 #     print("ERROR CANNOT HAVE BOTH BARRIER CALCULATION METHODS SET TO TRUE")
 
+#setting columns 
+#EQMT
+        #open workbook
+wb = openpyxl.load_workbook(XL_FILEPATH, data_only=True)
+ws = wb['Input LwA_XYZ']
+EQMT_COUNT = ws['A']
+EQMT_TAG = ws['B']
+PATH = ws['C']
+MAKE = ws['D']
+MODEL = ws['E']
+HZ63 = ws['F']
+HZ125 = ws['G']
+HZ250 = ws['H']
+HZ500 = ws['I']
+HZ1000 = ws['J']
+HZ2000 = ws['K']
+HZ4000 = ws['L']
+HZ8000 = ws['M']
+SOUND_LEVEL = ws['N']
+SOUND_REF_DIST = ws['O']
+TESTED_Q = ws['P']
+INSTALLED_Q = ws['R']
+EQMT_INSERTION_LOSS = ws['S']
+EQMT_X_COORD = ws['T']
+EQMT_Y_COORD = ws['U']
+EQMT_Z_COORD = ws['V']
+
+#RCVRS
+R_NAME = ws['Z']
+REC_X_COORD = ws['AA']
+REC_Y_COORD = ws['AB']
+REC_Z_COORD = ws['AC']
+SOUND_LIMIT = ws['AD']
+
+#BARRIERS
+BARRIER_NAME = ws['Z']
+BAR_X0_COORD = ws['AA']
+BAR_Y0_COORD = ws['AB']
+BAR_Z0_COORD = ws['AC']
+BAR_X1_COORD = ws['AD']
+BAR_Y1_COORD = ws['AE']
+BAR_Z1_COORD = ws['AF']
+
+#SCALING
+KNOWN_DISTANCE_FT = ws['AE20']
+SCALE_LINE_DISTANCE_PX = ws['AF20']
+
 class FuncVars(object):
     def __init__(self, parent):
         self.parent = parent
-        #open workbook
-        wb = openpyxl.load_workbook(XL_FILEPATH, data_only=True)
-        ws = wb['Input LwA_XYZ']
 
         #initialize eqmt list
         self.equipment_list = list()
-        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, tested_q, installed_q, insertion_loss, x_coord, y_coord, z_coord in zip(ws['A'], ws['B'], ws['C'], ws['D'], ws['E'], ws['F'], ws['G'], ws['H'], ws['J'], ws['K'], ws['L'], ws['M'], ws['N'] ):
+        for count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, tested_q, installed_q, insertion_loss, x_coord, y_coord, z_coord, hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000 in zip(EQMT_COUNT, EQMT_TAG, PATH, MAKE, MODEL, SOUND_LEVEL, SOUND_REF_DIST, TESTED_Q, INSTALLED_Q, EQMT_INSERTION_LOSS, EQMT_X_COORD, EQMT_Y_COORD, EQMT_Z_COORD, HZ63, HZ125, HZ250, HZ500, HZ1000, HZ2000, HZ4000, HZ8000):
             if count.value == "Number of Units": continue
             if count.value == None: break
             print(z_coord.value)
-            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, tested_q.value, installed_q.value, insertion_loss.value, x_coord.value, y_coord.value, z_coord.value))
+            self.equipment_list.append(Equipment(count.value, str(eqmt_tag.value), path.value, make.value, model.value, sound_level.value, sound_ref_dist.value, tested_q.value, installed_q.value, insertion_loss.value, x_coord.value, y_coord.value, z_coord.value, hz63.value, hz125.value, hz250.value, hz500.value, hz1000.value, hz2000.value, hz4000.value, hz8000.value))
 
         #initialize rcvr list
         self.receiver_list = list()
-        for r_name, x_coord, y_coord, z_coord, sound_limit in zip(ws['R'], ws['S'], ws['T'], ws['U'], ws['V']):
+        for r_name, x_coord, y_coord, z_coord, sound_limit in zip(R_NAME, REC_X_COORD, REC_Y_COORD, REC_Z_COORD, SOUND_LIMIT):
             if r_name.value == "R#": continue
             if r_name.value == None: break
             self.receiver_list.append(Receiver(str(r_name.value), x_coord.value, y_coord.value, z_coord.value, sound_limit.value, "NA"))
 
         #initialize barrier list
         self.barrier_list = list()
-        for barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord in zip(ws['R'], ws['S'], ws['T'], ws['U'], ws['V'], ws['W'], ws['X']):
+        for barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord in zip(BARRIER_NAME, BAR_X0_COORD, BAR_Y0_COORD, BAR_Z0_COORD, BAR_X1_COORD, BAR_Y1_COORD, BAR_Z1_COORD):
             if int(barrier_name.coordinate[1:]) < 24: continue
             if barrier_name.value == None: break
             self.barrier_list.append(Barrier(str(barrier_name.value), x0_coord.value, y0_coord.value, z0_coord.value, x1_coord.value, y1_coord.value, z1_coord.value))
 
         #initialize master_scale
         self.old_master_scale = 1.0
-        self.known_distance_ft = ws['W20'].value if ws['W20'].value != None else 1.0
-        self.scale_line_distance_px = ws['X20'].value if ws['X20'].value != None else 1.0
+        self.known_distance_ft = KNOWN_DISTANCE_FT.value if KNOWN_DISTANCE_FT.value != None else 1.0
+        self.scale_line_distance_px = SCALE_LINE_DISTANCE_PX.value if SCALE_LINE_DISTANCE_PX.value != None else 1.0
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
@@ -85,7 +130,7 @@ class FuncVars(object):
         self.parent.pane_eqmt_info.generateEqmtTree()
 
 class Equipment(object):
-    def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, tested_q, installed_q, insertion_loss, x_coord, y_coord, z_coord):
+    def __init__(self, count, eqmt_tag, path, make, model, sound_level, sound_ref_dist, tested_q, installed_q, insertion_loss, x_coord, y_coord, z_coord, hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000):
         self.count = count
         self.eqmt_tag = eqmt_tag.replace(" ", "-")
         self.path = path
@@ -99,6 +144,14 @@ class Equipment(object):
         self.x_coord = x_coord if x_coord != None else 0
         self.y_coord = y_coord if y_coord != None else 0
         self.z_coord = z_coord if z_coord != None else 0
+        self.hz63 = hz63
+        self.hz125 = hz125
+        self.hz250 = hz250
+        self.hz500 = hz500
+        self.hz1000 = hz1000
+        self.hz2000 = hz2000
+        self.hz4000 = hz4000
+        self.hz8000 = hz8000
 
 class Receiver(object):
     def __init__(self, r_name, x_coord, y_coord, z_coord, sound_limit, predicted_sound_level):
@@ -583,7 +636,6 @@ class Editor(tkinter.Frame):
         self.parent.pane_eqmt_info.generateRcvrTree()
         self.parent.pane_eqmt_info.generateBarrierTree()
 
-
 class Pane_Toolbox(tkinter.Frame):
     def __init__(self, parent):
         tkinter.Frame.__init__(self, parent)
@@ -908,7 +960,79 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
         return barrier_IL
 
-    #def OB_barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z, hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000):
+    def OB_fresnel_barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000, eqmt_level, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z):
+        ob_levels_list = [hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000]
+        ob_bands_list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+        #testing if line of sight is broken along horizontal plane
+        eqmt_point = CraigsFunFunctions.Point(eqmt_x, eqmt_y)
+        receiver_point = CraigsFunFunctions.Point(rcvr_x, rcvr_y)
+        bar_start_point = CraigsFunFunctions.Point(bar_x0, bar_y0)
+        bar_end_point = CraigsFunFunctions.Point(bar_x1, bar_y1)
+        if not CraigsFunFunctions.doIntersect(eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            return 0
+        try:
+            m_source2receiver = (rcvr_y-eqmt_y)/(rcvr_x-eqmt_x)
+        except ZeroDivisionError:
+            return 0
+        try:
+            m_bar_start2end = (bar_y0-bar_y1)/(bar_x0-bar_x1)
+        except ZeroDivisionError:
+            return 0
+
+        b_source2receiver = eqmt_y-(eqmt_x*m_source2receiver)
+        b_bar_start2end = bar_y0-(bar_x0*m_bar_start2end)
+        intersection_x = (b_bar_start2end-b_source2receiver)/(m_source2receiver-m_bar_start2end)
+        intersection_y = m_source2receiver*intersection_x+b_source2receiver
+
+        bar_min_z = min(bar_z0, bar_z1)
+        bar_height_difference = abs(bar_z0-bar_z1)
+        bar_length = CraigsFunFunctions.distance_formula(x0=bar_x0, y0=bar_y0, x1=bar_x1, y1=bar_y1)
+        bar_slope = bar_height_difference/bar_length
+        if bar_z0 <= bar_z1:
+                bar_dist2barxpoint = CraigsFunFunctions.distance_formula(x0=intersection_x , y0=intersection_y, x1=bar_x0, y1=bar_y0)
+        else:
+                bar_dist2barxpoint = CraigsFunFunctions.distance_formula(x0=intersection_x , y0=intersection_y, x1=bar_x1, y1=bar_y1)
+
+        bar_height_to_use = bar_slope*bar_dist2barxpoint+bar_min_z
+
+        # testing if line of sight is broken vertically
+        if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
+            return 0
+
+        distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
+        distance_source2bar_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=intersection_x, y1=intersection_y)
+        distance_barrier2receiever_straight = distance_source2receiver_horizontal - distance_source2bar_horizontal
+        distance_source2receiver_propogation = math.sqrt(distance_source2receiver_horizontal**2+(rcvr_z-eqmt_z)**2)
+        distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
+        distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
+        path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
+
+        speed_of_sound = 1128
+        fresnel_num_list = [(2*path_length_difference)/(speed_of_sound/ob) for ob in ob_bands_list]
+
+        line_point_correction = 0                  #assume no line/point source correction 0 for point, -5 for line
+        barrier_finite_infinite_correction = 1.0 #assume infinite barrier see Mehta for correction under finite barrier. 
+        Kb_barrier_constant = 5                    #assume Kb (barrier constant) for wall = 5, berm = 8
+        barrier_attenuate_limit = 20               # wall limit = 20 berm limit = 23
+        
+        ob_barrier_attenuation_list = []
+        for N in fresnel_num_list: 
+            n_d = math.sqrt(2*math.pi*N)
+            ob_barrier_attenuation = ((20*math.log10(n_d/math.tanh(n_d))) + Kb_barrier_constant + line_point_correction)**barrier_finite_infinite_correction
+
+            if ob_barrier_attenuation > barrier_attenuate_limit:
+                ob_barrier_attenuation = barrier_attenuate_limit
+            ob_barrier_attenuation_list.append(ob_barrier_attenuation)
+        
+        ob_attenuated_levels_list = [x - y for x, y in zip(ob_levels_list, ob_barrier_attenuation_list)]
+        ob_a_weighting_list = [-26.2, -16.1, -8.6, -3.2, -0, 1.2, 1, -1.1]
+        ob_attenuated_aweighted_levels_list = [x+y for x, y in zip(ob_attenuated_levels_list, ob_a_weighting_list)]
+
+        attenuated_aweighted_level = acoustics.decibel.dbsum(ob_attenuated_aweighted_levels_list)
+
+        barrier_IL = eqmt_level - attenuated_aweighted_level
+        
+        return round(barrier_IL,1)
 
     def update_est_noise_levels(self):
         for rcvr in self.parent.func_vars.receiver_list:
@@ -930,15 +1054,30 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     attenuation = abs(10*math.log10(q/(4*math.pi*r**2)))
                     used_barrier_name = None
                     barrier_IL = 0
-                    if TAKE_ARI_BARRIER == True:
+                    if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False:
                         for bar in self.parent.func_vars.barrier_list:
                             barrier_IL_test = self.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
                             if barrier_IL_test > barrier_IL:
                                 barrier_IL = barrier_IL_test
-                                used_barrier_name = bar.barrier_name
+                                used_barrier_name = str(bar.barrier_name + ' - ari')
+                    
+                    if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
+                        for bar in self.parent.func_vars.barrier_list:
+                            if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]: 
+                                barrier_IL_test = self.OB_fresnel_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000, eqmt.sound_level, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
+                                # print([eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000])
+                                # print('barrier IL Test: ', barrier_IL_test)
+                                barriermethod = ' - OB_fresnel'
+                            else:
+                                barrier_IL_test = self.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
+                                barriermethod = ' - ari'
+                            if barrier_IL_test > barrier_IL:
+                                barrier_IL = barrier_IL_test
+                                used_barrier_name = str(bar.barrier_name + barriermethod)
+
                     spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
-                    # print(distance)
-                    print(f"eqmt: {eqmt.eqmt_tag}, rcvr: {rcvr.r_name}, bar: {used_barrier_name}, barrier IL: {barrier_IL}")
+                    # if barriermethod == ' - OB_fresnel':
+                    print(f"eqmt: ,{eqmt.eqmt_tag}, rcvr: ,{rcvr.r_name}, bar: ,{used_barrier_name}, barrier IL: ,{barrier_IL}")
                 except ValueError:
                     print('MATH DOMAIN ERROR OCCURED')
                     spl = 1000
@@ -972,7 +1111,6 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.current_receiver = None
         self.current_equipment = None
 
-
     def onExportListButton(self):
         wb = openpyxl.load_workbook(XL_FILEPATH, keep_vba=True, data_only=False)
         ws = wb['Input LwA_XYZ']
@@ -982,26 +1120,26 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 if row[1].value == None:
                     break
                 if row[1].value.replace(" ","-") == obj.eqmt_tag.replace(" ", "-"):
-                    row[11].value = obj.x_coord
-                    row[12].value = obj.y_coord
+                    row[19].value = obj.x_coord
+                    row[20].value = obj.y_coord
 
         for obj in self.parent.func_vars.receiver_list:
             for row in ws.iter_rows(max_row=100):
-                if row[17].value == None:
+                if row[25].value == None:
                     break
-                if row[17].value.replace(" ","-") == obj.r_name.replace(" ", "-"):
-                    row[18].value = obj.x_coord
-                    row[19].value = obj.y_coord
+                if row[25].value.replace(" ","-") == obj.r_name.replace(" ", "-"):
+                    row[26].value = obj.x_coord
+                    row[27].value = obj.y_coord
 
         for obj in self.parent.func_vars.barrier_list:
             for row in ws.iter_rows(min_row=24, max_row=100):
-                if row[17].value == None:
+                if row[25].value == None:
                     break
-                if row[17].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
-                    row[18].value = obj.x0_coord
-                    row[19].value = obj.y0_coord
-                    row[21].value = obj.x1_coord
-                    row[22].value = obj.y1_coord
+                if row[25].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
+                    row[26].value = obj.x0_coord
+                    row[27].value = obj.y0_coord
+                    row[29].value = obj.x1_coord
+                    row[30].value = obj.y1_coord
 
         # saving scale
         ws['W20'] = self.parent.func_vars.known_distance_ft
@@ -1273,7 +1411,6 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
         self.save_changes_button = tkinter.Button(self.newWindow, text="Save Changes", command=self.save_changes, font=(None, 15))
         self.save_changes_button.grid(row=15, column=1, columnspan=2, sticky=tkinter.N)
-
 
 class Main_Application(tkinter.Frame):
     def __init__(self, parent):
