@@ -305,6 +305,19 @@ class Editor(tkinter.Frame):
         self.curX = self.canvas.canvasx(event.x)
         self.curY = self.canvas.canvasy(event.y)
 
+    def drawing_grid_leftMouseClick(self, event):
+        self.canvas.delete("grid_rect")
+        self.canvas.delete("grid_level")
+        self.get_current_n_start_mouse_pos(event)
+        self.temp_rect = self.canvas.create_rectangle(self.x0, self.y0, self.x0, self.y0, outline='green', width=5)
+    def drawing_grid_leftMouseMove(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.coords(self.temp_rect, self.x0, self.y0, self.curX, self.curY)
+    def drawing_grid_leftMouseRelease(self, event):
+        self.get_current_mouse_pos(event)
+        self.canvas.delete(self.temp_rect)
+        self.grid_rect = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, outline='green', width=5, tag="grid_rect")
+
     def setting_scale_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
 
@@ -649,6 +662,8 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_rotate_eqmt_drawing = tkinter.Button(self, text="Eqmt Drawing - Rotate", command=self.rotate_eqmt_drawing, font=(None, 15))
         self.button_move_eqmt_drawing = tkinter.Button(self, text="Eqmt Drawing - Move", command=self.move_eqmt_drawing, font=(None, 15))
         self.button_resize_eqmt_drawing = tkinter.Button(self, text="Eqmt Drawing - Resize", command=self.resize_eqmt_drawing, font=(None, 15))
+        self.button_draw_grid = tkinter.Button(self, text="Draw Grid", command=self.draw_grid, font=(None, 15))
+        self.button_update_grid = tkinter.Button(self, text="Update Grid", command=self.update_grid, font=(None, 15))
 
         self.button_set_image_scale.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
         self.button_measure.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
@@ -658,6 +673,102 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_rotate_eqmt_drawing.grid(row=0, column=2, sticky=tkinter.N + tkinter.W)
         self.button_move_eqmt_drawing.grid(row=1, column=2, sticky=tkinter.N + tkinter.W)
         self.button_resize_eqmt_drawing.grid(row=2, column=2, sticky=tkinter.N + tkinter.W)
+        self.button_draw_grid.grid(row=0, column=3, sticky=tkinter.N + tkinter.W)
+        self.button_update_grid.grid(row=1, column=3, sticky=tkinter.N + tkinter.W)
+
+    def draw_grid(self): 
+        self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_grid_leftMouseClick)
+        self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_grid_leftMouseMove)
+        self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease)
+
+        self.parent.pane_eqmt_info.status_label.configure(text='Status: Drawing Grid')
+        self.parent.pane_eqmt_info.e1.delete(0, 'end')
+        self.parent.pane_eqmt_info.e1.insert(0, "elevation, spacing (ft)")
+
+        self.parent.pane_eqmt_info.e1.focus()
+
+    def update_grid(self):
+        self.parent.editor.canvas.delete("grid_level")
+        inputdata = self.parent.pane_eqmt_info.e1.get()
+        inputdata_list = inputdata.split(", ")
+        grid_elevation = int(inputdata_list[0])
+        spacing = int(inputdata_list[1])
+        grid_rect_coords = self.parent.editor.canvas.coords(self.parent.editor.grid_rect)
+        start_x_coord_ft = grid_rect_coords[0]*self.parent.func_vars.master_scale
+        start_y_coord_ft = grid_rect_coords[1]*self.parent.func_vars.master_scale
+        end_x_coord_ft = grid_rect_coords[2]*self.parent.func_vars.master_scale
+        end_y_coord_ft = grid_rect_coords[3]*self.parent.func_vars.master_scale
+        
+        grid_receiver_list = []
+        cur_x_coord_ft = start_x_coord_ft
+        cur_y_coord_ft = start_y_coord_ft
+        while cur_y_coord_ft < end_y_coord_ft: 
+            while cur_x_coord_ft < end_x_coord_ft:
+                grid_receiver_list.append([cur_x_coord_ft, cur_y_coord_ft, "0"])
+                cur_x_coord_ft += spacing
+            cur_y_coord_ft += spacing
+            cur_x_coord_ft = start_x_coord_ft
+        print(grid_receiver_list)
+        
+        #calculating noise levels at receiver in grid list
+        for grd_rcvr in grid_receiver_list:
+            rcvr_x_coord = grd_rcvr[0]
+            rcvr_y_coord = grd_rcvr[1]
+            sound_pressure = 0
+            for eqmt in self.parent.func_vars.equipment_list:
+                if eqmt.sound_ref_dist == 0:
+                    sound_power = eqmt.sound_level
+                else:
+                    q = eqmt.tested_q #need to update this
+                    r = eqmt.sound_ref_dist*0.308
+                    lp = eqmt.sound_level
+                    b = q/(4*math.pi*r**2)
+                    sound_power = lp + abs(10*math.log10(b))
+                distance = math.sqrt((rcvr_x_coord-eqmt.x_coord)**2 + (rcvr_y_coord - eqmt.y_coord)**2 + (grid_elevation - eqmt.z_coord)**2)
+                try:
+                    q = eqmt.installed_q
+                    r = distance*0.308
+                    attenuation = abs(10*math.log10(q/(4*math.pi*r**2)))
+                    used_barrier_name = None
+                    barrier_IL = 0
+                    if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False:
+                        for bar in self.parent.func_vars.barrier_list:
+                            barrier_IL_test = self.parent.pane_eqmt_info.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
+                            if barrier_IL_test > barrier_IL:
+                                barrier_IL = barrier_IL_test
+                                used_barrier_name = str(bar.barrier_name + ' - ari')
+                    
+                    if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
+                        for bar in self.parent.func_vars.barrier_list:
+                            if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]: 
+                                barrier_IL_test = self.parent.pane_eqmt_info.OB_fresnel_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000, eqmt.sound_level, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
+                                barriermethod = ' - OB_fresnel'
+                            else:
+                                barrier_IL_test = self.parent.pane_eqmt_info.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
+                                barriermethod = ' - ari'
+                            if barrier_IL_test > barrier_IL:
+                                barrier_IL = barrier_IL_test
+                                used_barrier_name = str(bar.barrier_name + barriermethod)
+
+                    spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
+                except ValueError:
+                    print('MATH DOMAIN ERROR OCCURED')
+                    spl = 1000
+                sound_pressure += 10**(spl/10)
+            grd_rcvr[2] = str(round(10*math.log10(sound_pressure),1))   
+
+        colorscale = [x for x in range(35, 95, 9)]
+        colorlist = ["black", "maroon2", "purple", "blue", "cyan3", "green3", "yellow3", "DarkOrange1", "OrangeRed2"]
+        for grid_rcvr in grid_receiver_list:
+            x = grid_rcvr[0]/self.parent.func_vars.master_scale
+            y = grid_rcvr[1]/self.parent.func_vars.master_scale
+            level = grid_rcvr[2]
+            textcolor = "black"
+            for colorrange, color in zip(colorscale, colorlist): 
+                if int(float(level)) > colorrange:
+                    textcolor = color
+
+            self.parent.editor.canvas.create_text((x, y), tag="grid_level", text=level, font=("arialbd.ttf", 10), fill=textcolor)  
 
     def set_scale(self):
         self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
@@ -665,6 +776,8 @@ class Pane_Toolbox(tkinter.Frame):
         self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
 
         self.parent.pane_eqmt_info.status_label.configure(text='Status: Setting Scale')
+        self.parent.pane_eqmt_info.e1.delete(0, 'end')
+        self.parent.pane_eqmt_info.e1.insert(0, "distance (ft)")
         self.parent.pane_eqmt_info.e1.focus()
 
     def draw_equipment(self):
