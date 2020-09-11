@@ -69,7 +69,7 @@ def exportBarrierPlots(imported_list):
         plt.text(col1, -18, f"Barrier Reduction per {REDUCTION_METHOD} Method: {BARRIER_ATTENUATION} dB", fontsize=10)
         plt.text(col2, -10, f"Source Height: {EQMT_HEIGHT} ft", fontsize=10)
         plt.text(col2, -14, f"Barrier Location: X = {SOURCE_TO_BAR} ft, Y = {BAR_HEIGHT} ft", fontsize=10)
-        plt.text(col2, -18, f"Barrier Location: X = {SOURCE_TO_RECEIVER} ft, Y = {RCVR_HEIGHT} ft", fontsize=10)
+        plt.text(col2, -18, f"Source Location: X = {SOURCE_TO_RECEIVER} ft, Y = {RCVR_HEIGHT} ft", fontsize=10)
 
         filepath = f"barrierScreenshots/{TITLE}.png"
 

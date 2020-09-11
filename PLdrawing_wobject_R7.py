@@ -755,7 +755,7 @@ class Pane_Toolbox(tkinter.Frame):
                         for bar in self.parent.func_vars.barrier_list:
                             if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]: 
                                 barrier_info_list = self.parent.pane_eqmt_info.OB_fresnel_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000, eqmt.sound_level, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
-                                barrier_IL_test = barrier_info_list[0] 
+                                barrier_IL_test = barrier_info_list[0] if barrier_info_list != 0 else 0
                                 barriermethod = ' - OB_fresnel'
                             else:
                                 barrier_info_list = self.parent.pane_eqmt_info.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
