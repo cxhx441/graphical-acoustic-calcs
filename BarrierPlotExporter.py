@@ -3,6 +3,8 @@ from pathlib import Path
 
 def exportBarrierPlots(imported_list):
     for listy in imported_list:
+        if not listy: 
+            continue
         BARRIER_ATTENUATION = listy[0]
         EQMT = listy[1]
         RCVR = listy[2]

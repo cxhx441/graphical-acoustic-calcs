@@ -746,7 +746,7 @@ class Pane_Toolbox(tkinter.Frame):
                     if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False:
                         for bar in self.parent.func_vars.barrier_list:
                             barrier_info_list = self.parent.pane_eqmt_info.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
-                            barrier_IL_test = barrier_info_list[0] 
+                            barrier_IL_test = barrier_info_list[0] if barrier_info_list != 0 else 0
                             if barrier_IL_test > barrier_IL:
                                 barrier_IL = barrier_IL_test
                                 used_barrier_name = str(bar.barrier_name + ' - ari')
@@ -759,7 +759,7 @@ class Pane_Toolbox(tkinter.Frame):
                                 barriermethod = ' - OB_fresnel'
                             else:
                                 barrier_info_list = self.parent.pane_eqmt_info.ARI_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
-                                barrier_IL_test = barrier_info_list[0] 
+                                barrier_IL_test = barrier_info_list[0] if barrier_info_list != 0 else 0
                                 barriermethod = ' - ari'
                             if barrier_IL_test > barrier_IL:
 
@@ -1208,6 +1208,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                                 used_barrier_name = str(bar.barrier_name + barriermethod)
                                 barrierListForExcelOutput_curData = [int(barrier_IL), eqmt.eqmt_tag, rcvr.r_name, bar.barrier_name, round(eqmt.z_coord,1), round(rcvr.z_coord, 1), round(barrier_info_list[1],1), round(barrier_info_list[2], 1), round(barrier_info_list[3],1), round(barrier_info_list[4],1), round(barrier_info_list[5],1), round(barrier_info_list[6],1), round(barrier_info_list[7],1), barrier_info_list[8], eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000] if barrier_info_list != 0 else [0]
                     self.barrierListForExcelOutput.append(barrierListForExcelOutput_curData)
+                    barrierListForExcelOutput_curData = []
                     spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
                     # if barriermethod == ' - OB_fresnel':
                     print(f"eqmt: __{eqmt.eqmt_tag}, rcvr: __{rcvr.r_name}, bar: __{used_barrier_name}, barrier IL: __{barrier_IL}")
