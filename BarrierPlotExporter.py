@@ -8,6 +8,9 @@ def exportBarrierPlots(imported_list):
         shutil.rmtree("barrierScreenshots")
     Path("barrierScreenshots").mkdir(parents=True, exist_ok=True)
 
+    curItemNum = 1
+    totlItenNum = len(imported_list)
+
     plt.figure(figsize=(15, 10))
     
     ax = plt.subplot(1, 1, 1)
@@ -16,6 +19,8 @@ def exportBarrierPlots(imported_list):
 
     for listy in imported_list:
         if not listy:
+            print(f"({curItemNum}/{totlItenNum}) - no data")
+            curItemNum +=1
             continue
         BARRIER_ATTENUATION = listy[0]
         EQMT = listy[1]
@@ -76,6 +81,7 @@ def exportBarrierPlots(imported_list):
         # plt.savefig(filepath, dpi=100, pad_inches=0.1)
         plt.savefig(filepath)
         plt.cla()
-        print(TITLE)
+        print(f"({curItemNum}/{totlItenNum}) - {TITLE}")
+        curItemNum +=1
 
     print("done exportBarrierPlots")
