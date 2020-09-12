@@ -1,9 +1,21 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
+import shutil
+import os
 
 def exportBarrierPlots(imported_list):
+    if os.path.exists("barrierScreenshots"):
+        shutil.rmtree("barrierScreenshots")
+    Path("barrierScreenshots").mkdir(parents=True, exist_ok=True)
+
+    plt.figure(figsize=(15, 10))
+    
+    ax = plt.subplot(1, 1, 1)
+    box = ax.get_position()
+    ax.set_position([box.x0, 0.2, box.width, box.height*.9])
+
     for listy in imported_list:
-        if not listy: 
+        if not listy:
             continue
         BARRIER_ATTENUATION = listy[0]
         EQMT = listy[1]
@@ -28,42 +40,31 @@ def exportBarrierPlots(imported_list):
         straight_path_y = [EQMT_HEIGHT, RCVR_HEIGHT]
         barrier_line_x = [SOURCE_TO_BAR, SOURCE_TO_BAR]
         barrier_line_y = [0, BAR_HEIGHT]
-
-        source_point_x = [0]
         source_point_y = [EQMT_HEIGHT]
-
         rcvr_point_x = [SOURCE_TO_RECEIVER]
         rcvr_point_y = [RCVR_HEIGHT]
-
-        plt.figure(figsize=(15, 10))
 
         plt.plot(propogation_path_x, propogation_path_y, linewidth=3, color='red', label='Propogation Path')
         plt.plot(straight_path_x, straight_path_y, linewidth=1, color='blue', label='Direct Path')
         plt.plot(barrier_line_x, barrier_line_y, linewidth=3, color='magenta', label='Barrier - Min 4lb/ft2, \n Unperforated')
 
-        plt.scatter(source_point_x, source_point_y, linewidth=4, color='blue', label='Source')
+        plt.scatter([0], source_point_y, linewidth=4, color='blue', label='Source')
         plt.scatter(rcvr_point_x, rcvr_point_y, linewidth=4, color='green', label='Receiver')
 
-        plt.grid(which='major', axis='both', color='gray', linestyle='-.', linewidth=0.5)
         plt.xlim(0, SOURCE_TO_RECEIVER+10)
         plt.ylim(0, max(EQMT_HEIGHT, RCVR_HEIGHT, BAR_HEIGHT)+10)
 
+        plt.title(TITLE, fontsize=10)
         plt.xlabel('Height (ft)', fontsize=12)
         plt.ylabel('Distance (ft)', fontsize=12)
         plt.suptitle("Noise Barrier - Geometry", fontsize=16)
-        plt.title(TITLE, fontsize=10)
-
-        #
-        ax = plt.subplot(111)
-        box = ax.get_position()
-        ax.set_position([box.x0, 0.2, box.width, box.height*.9])
+        plt.grid(which='major', axis='both', color='gray', linestyle='-.', linewidth=0.5)
 
         # Put a legend to the right of the current axis
         ax.legend(loc='upper center', bbox_to_anchor=(0.92, -.065))
 
         col1 = 0
-        col2 = 0.35 * SOURCE_TO_RECEIVER
-
+        col2 = 0.40 * (SOURCE_TO_RECEIVER+10)
         plt.text(col1, -10, f"A = {SOURCE_TO_TOP_BAR} ft, B = {RCVR_TO_TOP_BAR} ft, D = {DIRECT_PATH} ft", fontsize=10)
         plt.text(col1, -14, f"Path-Length Difference = {PLD} ft", fontsize=10)
         plt.text(col1, -18, f"Barrier Reduction per {REDUCTION_METHOD} Method: {BARRIER_ATTENUATION} dB", fontsize=10)
@@ -72,9 +73,9 @@ def exportBarrierPlots(imported_list):
         plt.text(col2, -18, f"Source Location: X = {SOURCE_TO_RECEIVER} ft, Y = {RCVR_HEIGHT} ft", fontsize=10)
 
         filepath = f"barrierScreenshots/{TITLE}.png"
-
-        Path("barrierScreenshots").mkdir(parents=True, exist_ok=True)
-
         # plt.savefig(filepath, dpi=100, pad_inches=0.1)
         plt.savefig(filepath)
-        plt.close()
+        plt.cla()
+        print(TITLE)
+
+    print("done exportBarrierPlots")
