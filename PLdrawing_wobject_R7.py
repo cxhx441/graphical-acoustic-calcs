@@ -24,7 +24,7 @@ TAKE_OB_FRESNAL_BARRIER = True
 # if TAKE_ARI_BARRIER == True and TAKE_OB_BARRIER == True:
 #     print("ERROR CANNOT HAVE BOTH BARRIER CALCULATION METHODS SET TO TRUE")
 
-#setting columns 
+#setting columns
 #EQMT
         #open workbook
 wb = openpyxl.load_workbook(XL_FILEPATH, data_only=True)
@@ -680,15 +680,15 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_update_grid.grid(row=1, column=3, sticky=tkinter.N + tkinter.W)
         self.button_export_bar_file.grid(row=2, column=3, sticky=tkinter.N + tkinter.W)
 
-    def export_bar_file(self): 
-        with open('bar_export_list.csv', mode='w', newline='') as csvfile: 
+    def export_bar_file(self):
+        with open('bar_export_list.csv', mode='w', newline='') as csvfile:
             csv_writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for barrier_item in self.parent.pane_eqmt_info.barrierListForExcelOutput:
                 print(barrier_item)
                 csv_writer.writerow(barrier_item)
         BarrierPlotExporter.exportBarrierPlots(self.parent.pane_eqmt_info.barrierListForExcelOutput[1:])
 
-    def draw_grid(self): 
+    def draw_grid(self):
         self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.drawing_grid_leftMouseClick)
         self.parent.editor.canvas.bind("<B1-Motion>", self.parent.editor.drawing_grid_leftMouseMove)
         self.parent.editor.canvas.bind("<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease)
@@ -710,18 +710,18 @@ class Pane_Toolbox(tkinter.Frame):
         start_y_coord_ft = grid_rect_coords[1]*self.parent.func_vars.master_scale
         end_x_coord_ft = grid_rect_coords[2]*self.parent.func_vars.master_scale
         end_y_coord_ft = grid_rect_coords[3]*self.parent.func_vars.master_scale
-        
+
         grid_receiver_list = []
         cur_x_coord_ft = start_x_coord_ft
         cur_y_coord_ft = start_y_coord_ft
-        while cur_y_coord_ft < end_y_coord_ft: 
+        while cur_y_coord_ft < end_y_coord_ft:
             while cur_x_coord_ft < end_x_coord_ft:
                 grid_receiver_list.append([cur_x_coord_ft, cur_y_coord_ft, "0"])
                 cur_x_coord_ft += spacing
             cur_y_coord_ft += spacing
             cur_x_coord_ft = start_x_coord_ft
         print(grid_receiver_list)
-        
+
         #calculating noise levels at receiver in grid list
         for grd_rcvr in grid_receiver_list:
             rcvr_x_coord = grd_rcvr[0]
@@ -750,10 +750,10 @@ class Pane_Toolbox(tkinter.Frame):
                             if barrier_IL_test > barrier_IL:
                                 barrier_IL = barrier_IL_test
                                 used_barrier_name = str(bar.barrier_name + ' - ari')
-                    
+
                     if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
                         for bar in self.parent.func_vars.barrier_list:
-                            if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]: 
+                            if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]:
                                 barrier_info_list = self.parent.pane_eqmt_info.OB_fresnel_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000, eqmt.sound_level, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr_x_coord, rcvr_y_coord, grid_elevation)
                                 barrier_IL_test = barrier_info_list[0] if barrier_info_list != 0 else 0
                                 barriermethod = ' - OB_fresnel'
@@ -771,7 +771,7 @@ class Pane_Toolbox(tkinter.Frame):
                     print('MATH DOMAIN ERROR OCCURED')
                     spl = 1000
                 sound_pressure += 10**(spl/10)
-            grd_rcvr[2] = str(round(10*math.log10(sound_pressure),1))   
+            grd_rcvr[2] = str(round(10*math.log10(sound_pressure),1))
 
         colorscale = [x for x in range(35, 95, 9)]
         colorlist = ["black", "maroon2", "purple", "blue", "cyan3", "green3", "yellow3", "DarkOrange1", "OrangeRed2"]
@@ -780,11 +780,11 @@ class Pane_Toolbox(tkinter.Frame):
             y = grid_rcvr[1]/self.parent.func_vars.master_scale
             level = grid_rcvr[2]
             textcolor = "black"
-            for colorrange, color in zip(colorscale, colorlist): 
+            for colorrange, color in zip(colorscale, colorlist):
                 if int(float(level)) > colorrange:
                     textcolor = color
 
-            self.parent.editor.canvas.create_text((x, y), tag="grid_level", text=level, font=("arialbd.ttf", 10), fill=textcolor)  
+            self.parent.editor.canvas.create_text((x, y), tag="grid_level", text=level, font=("arialbd.ttf", 10), fill=textcolor)
 
     def set_scale(self):
         self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
@@ -1061,10 +1061,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
         if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
             return 0
 
-        distance_source2receiver_direct = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
+        distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
         distance_source2bar_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=intersection_x, y1=intersection_y)
-        distance_barrier2receiever_straight = distance_source2receiver_direct - distance_source2bar_horizontal
-        distance_source2receiver_propogation = math.sqrt(distance_source2receiver_direct**2+(rcvr_z-eqmt_z)**2)
+        distance_barrier2receiever_straight = distance_source2receiver_horizontal - distance_source2bar_horizontal
+        distance_source2receiver_propogation = math.sqrt(distance_source2receiver_horizontal**2+(rcvr_z-eqmt_z)**2)
         distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
         distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
         path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
@@ -1087,7 +1087,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         else:
             barrier_IL = 0
 
-        return [barrier_IL, bar_height_to_use, distance_source2receiver_direct, distance_source2bar_horizontal, distance_source2barrier_top, distance_receiver2barrier_top, distance_source2receiver_direct, path_length_difference, "ARI"]
+        return [barrier_IL, bar_height_to_use, distance_source2receiver_horizontal, distance_source2bar_horizontal, distance_source2barrier_top, distance_receiver2barrier_top, distance_source2receiver_propogation, path_length_difference, "ARI"]
 
     def OB_fresnel_barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000, eqmt_level, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z):
         ob_levels_list = [hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000]
@@ -1128,10 +1128,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
         if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
             return 0
 
-        distance_source2receiver_direct = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
+        distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
         distance_source2bar_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=intersection_x, y1=intersection_y)
-        distance_barrier2receiever_straight = distance_source2receiver_direct - distance_source2bar_horizontal
-        distance_source2receiver_propogation = math.sqrt(distance_source2receiver_direct**2+(rcvr_z-eqmt_z)**2)
+        distance_barrier2receiever_straight = distance_source2receiver_horizontal - distance_source2bar_horizontal
+        distance_source2receiver_propogation = math.sqrt(distance_source2receiver_horizontal**2+(rcvr_z-eqmt_z)**2)
         distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
         distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
         path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
@@ -1140,19 +1140,19 @@ class Pane_Eqmt_Info(tkinter.Frame):
         fresnel_num_list = [(2*path_length_difference)/(speed_of_sound/ob) for ob in ob_bands_list]
 
         line_point_correction = 0                  #assume no line/point source correction 0 for point, -5 for line
-        barrier_finite_infinite_correction = 1.0 #assume infinite barrier see Mehta for correction under finite barrier. 
+        barrier_finite_infinite_correction = 1.0 #assume infinite barrier see Mehta for correction under finite barrier.
         Kb_barrier_constant = 5                    #assume Kb (barrier constant) for wall = 5, berm = 8
         barrier_attenuate_limit = 20               # wall limit = 20 berm limit = 23
-        
+
         ob_barrier_attenuation_list = []
-        for N in fresnel_num_list: 
+        for N in fresnel_num_list:
             n_d = math.sqrt(2*math.pi*N)
             ob_barrier_attenuation = ((20*math.log10(n_d/math.tanh(n_d))) + Kb_barrier_constant + line_point_correction)**barrier_finite_infinite_correction
 
             if ob_barrier_attenuation > barrier_attenuate_limit:
                 ob_barrier_attenuation = barrier_attenuate_limit
             ob_barrier_attenuation_list.append(ob_barrier_attenuation)
-        
+
         ob_attenuated_levels_list = [x - y for x, y in zip(ob_levels_list, ob_barrier_attenuation_list)]
         ob_a_weighting_list = [-26.2, -16.1, -8.6, -3.2, -0, 1.2, 1, -1.1]
         ob_attenuated_aweighted_levels_list = [x+y for x, y in zip(ob_attenuated_levels_list, ob_a_weighting_list)]
@@ -1160,8 +1160,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
         attenuated_aweighted_level = acoustics.decibel.dbsum(ob_attenuated_aweighted_levels_list)
 
         barrier_IL = eqmt_level - attenuated_aweighted_level
-        
-        return [round(barrier_IL,1), bar_height_to_use, distance_source2receiver_direct, distance_source2bar_horizontal, distance_source2barrier_top, distance_receiver2barrier_top, distance_source2receiver_direct, path_length_difference, "OB-Fresnel"]
+
+        return [round(barrier_IL,1), bar_height_to_use, distance_source2receiver_horizontal, distance_source2bar_horizontal, distance_source2barrier_top, distance_receiver2barrier_top, distance_source2receiver_propogation, path_length_difference, "OB-Fresnel"]
 
     def update_est_noise_levels(self):
         self.barrierListForExcelOutput = [["barrier loss", "eqmt", "rcvr", "bar", "eqmt height", "rcvr height", "bar height", "source to receiver", "source to bar (ft)", "source to bar top", "rcvr to bar top", "direct path", "PLD", "Barrier method", "noise data (if OB Fresnel used)"]]
@@ -1192,10 +1192,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
                                 barrier_IL = barrier_IL_test
                                 used_barrier_name = str(bar.barrier_name + ' - ari')
                                 barrierListForExcelOutput_curData = [barrier_IL, eqmt.eqmt_tag, rcvr.r_name, bar.barrier_name, round(eqmt.z_coord,1), round(rcvr.z_coord, 1), round(barrier_info_list[1],1), round(barrier_info_list[2], 1), round(barrier_info_list[3],1), round(barrier_info_list[4],1), round(barrier_info_list[5],1), round(barrier_info_list[6],1), round(barrier_info_list[7],1), barrier_info_list[8], eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000] if barrier_info_list != 0 else [0]
-                    
+
                     elif TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
                         for bar in self.parent.func_vars.barrier_list:
-                            if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]: 
+                            if None not in [eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000]:
                                 barrier_info_list = self.OB_fresnel_barrier_IL_calc(eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000, eqmt.sound_level, bar.x0_coord, bar.y0_coord, bar.z0_coord, bar.x1_coord, bar.y1_coord, bar.z1_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord)
                                 barrier_IL_test = barrier_info_list[0] if barrier_info_list != 0 else 0
                                 barriermethod = ' - OB_fresnel'
@@ -1206,9 +1206,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
                             if barrier_IL_test > barrier_IL:
                                 barrier_IL = barrier_IL_test
                                 used_barrier_name = str(bar.barrier_name + barriermethod)
-                                barrierListForExcelOutput_curData = [int(barrier_IL), eqmt.eqmt_tag, rcvr.r_name, bar.barrier_name, round(eqmt.z_coord,1), round(rcvr.z_coord, 1), round(barrier_info_list[1],1), round(barrier_info_list[2], 1), round(barrier_info_list[3],1), round(barrier_info_list[4],1), round(barrier_info_list[5],1), round(barrier_info_list[6],1), round(barrier_info_list[7],1), barrier_info_list[8], eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000] if barrier_info_list != 0 else [0]
+                                barrierListForExcelOutput_curData = [int(round(barrier_IL,0)), eqmt.eqmt_tag, rcvr.r_name, bar.barrier_name, round(eqmt.z_coord,1), round(rcvr.z_coord, 1), round(barrier_info_list[1],1), round(barrier_info_list[2], 1), round(barrier_info_list[3],1), round(barrier_info_list[4],1), round(barrier_info_list[5],1), round(barrier_info_list[6],1), round(barrier_info_list[7],1), barrier_info_list[8], eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000] if barrier_info_list != 0 else [0]
                     self.barrierListForExcelOutput.append(barrierListForExcelOutput_curData)
                     barrierListForExcelOutput_curData = []
+                    # print(eqmt.eqmt_tag, " - ", barrier_IL, int(barrier_IL), int(round(barrier_IL, 0)))
                     spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
                     # if barriermethod == ' - OB_fresnel':
                     print(f"eqmt: __{eqmt.eqmt_tag}, rcvr: __{rcvr.r_name}, bar: __{used_barrier_name}, barrier IL: __{barrier_IL}")
@@ -1224,7 +1225,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 # print(f"distance: {distance}")
             for listy in self.barrierListForExcelOutput:
                 print(listy, "/n")
-  
+
     def select_item_from_eqmt_tree(self, event):
         self.deselect_item_from_trees()
         self.current_equipment = self.equipment_tree.focus()
