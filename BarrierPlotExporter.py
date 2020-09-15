@@ -3,7 +3,14 @@ from pathlib import Path
 import shutil
 import os
 
+
+
 def exportBarrierPlots(imported_list):
+    fontsize_info = 12
+    fontsize_subtitle = 14
+    fontsize_axis = 14
+    fontsize_title = 20
+
     if os.path.exists("barrierScreenshots"):
         shutil.rmtree("barrierScreenshots")
     Path("barrierScreenshots").mkdir(parents=True, exist_ok=True)
@@ -12,7 +19,7 @@ def exportBarrierPlots(imported_list):
     totlItenNum = len(imported_list)
 
     plt.figure(figsize=(15, 10))
-    
+
     ax = plt.subplot(1, 1, 1)
     box = ax.get_position()
     ax.set_position([box.x0, 0.2, box.width, box.height*.9])
@@ -59,23 +66,28 @@ def exportBarrierPlots(imported_list):
         plt.xlim(0, SOURCE_TO_RECEIVER+10)
         plt.ylim(0, max(EQMT_HEIGHT, RCVR_HEIGHT, BAR_HEIGHT)+10)
 
-        plt.title(TITLE, fontsize=10)
-        plt.xlabel('Height (ft)', fontsize=12)
-        plt.ylabel('Distance (ft)', fontsize=12)
-        plt.suptitle("Noise Barrier - Geometry", fontsize=16)
+        plt.title(TITLE, fontsize=fontsize_subtitle)
+        plt.xlabel('Height (ft)', fontsize=fontsize_axis)
+        plt.ylabel('Distance (ft)', fontsize=fontsize_axis)
+        plt.suptitle("Noise Barrier - Geometry", fontsize=fontsize_title)
         plt.grid(which='major', axis='both', color='gray', linestyle='-.', linewidth=0.5)
 
         # Put a legend to the right of the current axis
         ax.legend(loc='upper center', bbox_to_anchor=(0.92, -.065))
 
+
+        row1 = -(max(EQMT_HEIGHT, RCVR_HEIGHT, BAR_HEIGHT)+10) * 0.125
+        row2 = row1 - (max(EQMT_HEIGHT, RCVR_HEIGHT, BAR_HEIGHT)+10) * 0.05
+        row3 = row2 - (max(EQMT_HEIGHT, RCVR_HEIGHT, BAR_HEIGHT)+10) * 0.05
         col1 = 0
         col2 = 0.40 * (SOURCE_TO_RECEIVER+10)
-        plt.text(col1, -10, f"A = {SOURCE_TO_TOP_BAR} ft, B = {RCVR_TO_TOP_BAR} ft, D = {DIRECT_PATH} ft", fontsize=10)
-        plt.text(col1, -14, f"Path-Length Difference = {PLD} ft", fontsize=10)
-        plt.text(col1, -18, f"Barrier Reduction per {REDUCTION_METHOD} Method: {BARRIER_ATTENUATION} dB", fontsize=10)
-        plt.text(col2, -10, f"Source Height: {EQMT_HEIGHT} ft", fontsize=10)
-        plt.text(col2, -14, f"Barrier Location: X = {SOURCE_TO_BAR} ft, Y = {BAR_HEIGHT} ft", fontsize=10)
-        plt.text(col2, -18, f"Receiver Location: X = {SOURCE_TO_RECEIVER} ft, Y = {RCVR_HEIGHT} ft", fontsize=10)
+
+        plt.text(col1, row1, f"A = {SOURCE_TO_TOP_BAR} ft, B = {RCVR_TO_TOP_BAR} ft, D = {DIRECT_PATH} ft", fontsize=fontsize_info)
+        plt.text(col1, row2, f"Path-Length Difference = {PLD} ft", fontsize=fontsize_info)
+        plt.text(col1, row3, f"Barrier Reduction per {REDUCTION_METHOD} Method: {BARRIER_ATTENUATION} dB", fontsize=fontsize_info)
+        plt.text(col2, row1, f"Source Height: {EQMT_HEIGHT} ft", fontsize=fontsize_info)
+        plt.text(col2, row2, f"Barrier Location: X = {SOURCE_TO_BAR} ft, Y = {BAR_HEIGHT} ft", fontsize=fontsize_info)
+        plt.text(col2, row3, f"Receiver Location: X = {SOURCE_TO_RECEIVER} ft, Y = {RCVR_HEIGHT} ft", fontsize=fontsize_info)
 
         filepath = f"barrierScreenshots/{TITLE}.png"
         # plt.savefig(filepath, dpi=100, pad_inches=0.1)
@@ -84,4 +96,8 @@ def exportBarrierPlots(imported_list):
         print(f"({curItemNum}/{totlItenNum}) - {TITLE}")
         curItemNum +=1
 
+        # plt.show()
+
     print("done exportBarrierPlots")
+
+# exportBarrierPlots([[10, 'CU-R-7', 'R6(patio)', 'bar1', 178.8, 160, 176.0, 106.0, 71.2, 71.3, 38.3, 107.6, 1.9, 'ARI', None, None, None, None, None, None, None, None]])
