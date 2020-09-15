@@ -45,6 +45,7 @@ def exportBarrierPlots(imported_list):
         REDUCTION_METHOD = listy[13]
 
         TITLE = f"from {EQMT} to {RCVR} across {BAR}"
+        # TITLE = f'{EQMT} to {RCVR}'
 
         propogation_path_x = [0, SOURCE_TO_BAR, SOURCE_TO_RECEIVER]
         propogation_path_y = [EQMT_HEIGHT, BAR_HEIGHT, RCVR_HEIGHT]
