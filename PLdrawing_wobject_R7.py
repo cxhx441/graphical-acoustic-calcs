@@ -1207,14 +1207,18 @@ class Pane_Eqmt_Info(tkinter.Frame):
                                 barrier_IL = barrier_IL_test
                                 used_barrier_name = str(bar.barrier_name + barriermethod)
                                 barrierListForExcelOutput_curData = [int(round(barrier_IL,0)), eqmt.eqmt_tag, rcvr.r_name, bar.barrier_name, round(eqmt.z_coord,1), round(rcvr.z_coord, 1), round(barrier_info_list[1],1), round(barrier_info_list[2], 1), round(barrier_info_list[3],1), round(barrier_info_list[4],1), round(barrier_info_list[5],1), round(barrier_info_list[6],1), round(barrier_info_list[7],1), barrier_info_list[8], eqmt.hz63, eqmt.hz125, eqmt.hz250, eqmt.hz500, eqmt.hz1000, eqmt.hz2000, eqmt.hz4000, eqmt.hz8000] if barrier_info_list != 0 else [0]
-                    self.barrierListForExcelOutput.append(barrierListForExcelOutput_curData)
+                    try:
+                        self.barrierListForExcelOutput.append(barrierListForExcelOutput_curData)
+                    except UnboundLocalError:
+                        print("Barrier Calculation Block Error")
+
                     barrierListForExcelOutput_curData = []
                     # print(eqmt.eqmt_tag, " - ", barrier_IL, int(barrier_IL), int(round(barrier_IL, 0)))
                     spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
                     # if barriermethod == ' - OB_fresnel':
                     print(f"eqmt: __{eqmt.eqmt_tag}, rcvr: __{rcvr.r_name}, bar: __{used_barrier_name}, barrier IL: __{barrier_IL}")
 
-                except ValueError:
+                except (ValueError, ZeroDivisionError):
                     print('MATH DOMAIN ERROR OCCURED')
                     spl = 1000
                 sound_pressure += 10**(spl/10)
@@ -1282,8 +1286,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[31].value = obj.z1_coord
 
         # saving scale
-        ws['W20'] = self.parent.func_vars.known_distance_ft
-        ws['X20'] = self.parent.func_vars.scale_line_distance_px
+        ws['AE20'] = self.parent.func_vars.known_distance_ft
+        ws['AF20'] = self.parent.func_vars.scale_line_distance_px
 
         print("saving")
         wb.save(filename=XL_FILEPATH_SAVE)
