@@ -1025,13 +1025,15 @@ class Pane_Eqmt_Info(tkinter.Frame):
         return int(round(barrier_IL,0))
 
     def ARI_barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z):
-        #testing if line of sight is broken along horizontal plane
+        #testing if line of sight is broken along HORIZONTAL plane
         eqmt_point = CraigsFunFunctions.Point(eqmt_x, eqmt_y)
         receiver_point = CraigsFunFunctions.Point(rcvr_x, rcvr_y)
         bar_start_point = CraigsFunFunctions.Point(bar_x0, bar_y0)
         bar_end_point = CraigsFunFunctions.Point(bar_x1, bar_y1)
         if not CraigsFunFunctions.doIntersect(eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            print("barrier fails horizontal test")
             return 0
+
         try:
             m_source2receiver = (rcvr_y-eqmt_y)/(rcvr_x-eqmt_x)
         except ZeroDivisionError:
@@ -1059,6 +1061,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
         # testing if line of sight is broken vertically
         if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
+            print("barrier fails easy vertical test")
             return 0
 
         distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
@@ -1068,6 +1071,15 @@ class Pane_Eqmt_Info(tkinter.Frame):
         distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
         distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
         path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
+
+        #testing if line of sight is broken along VERTICAL plane
+        eqmt_point = CraigsFunFunctions.Point(0, eqmt_z)
+        receiver_point = CraigsFunFunctions.Point(distance_source2receiver_horizontal, rcvr_z)
+        bar_start_point = CraigsFunFunctions.Point(distance_source2bar_horizontal, 0)
+        bar_end_point = CraigsFunFunctions.Point(distance_source2bar_horizontal, bar_height_to_use)
+        if not CraigsFunFunctions.doIntersect(eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            print("barrier fails vertical test")
+            return 0
 
         pld = path_length_difference
         if 0 < pld and pld <= 0.5:
@@ -1098,6 +1110,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         bar_start_point = CraigsFunFunctions.Point(bar_x0, bar_y0)
         bar_end_point = CraigsFunFunctions.Point(bar_x1, bar_y1)
         if not CraigsFunFunctions.doIntersect(eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            print("barrier fails horizontal test")
             return 0
         try:
             m_source2receiver = (rcvr_y-eqmt_y)/(rcvr_x-eqmt_x)
@@ -1126,6 +1139,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
         # testing if line of sight is broken vertically
         if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
+            print("barrier fails easy vertical test")
             return 0
 
         distance_source2receiver_horizontal = CraigsFunFunctions.distance_formula(x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
@@ -1135,6 +1149,15 @@ class Pane_Eqmt_Info(tkinter.Frame):
         distance_source2barrier_top = math.sqrt((bar_height_to_use-eqmt_z)**2+distance_source2bar_horizontal**2)
         distance_receiver2barrier_top = math.sqrt((bar_height_to_use-rcvr_z)**2+distance_barrier2receiever_straight**2)
         path_length_difference = distance_source2barrier_top+distance_receiver2barrier_top-distance_source2receiver_propogation
+
+        #testing if line of sight is broken along VERTICAL plane
+        eqmt_point = CraigsFunFunctions.Point(0, eqmt_z)
+        receiver_point = CraigsFunFunctions.Point(distance_source2receiver_horizontal, rcvr_z)
+        bar_start_point = CraigsFunFunctions.Point(distance_source2bar_horizontal, 0)
+        bar_end_point = CraigsFunFunctions.Point(distance_source2bar_horizontal, bar_height_to_use)
+        if not CraigsFunFunctions.doIntersect(eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            print("barrier fails vertical test")
+            return 0
 
         speed_of_sound = 1128
         fresnel_num_list = [(2*path_length_difference)/(speed_of_sound/ob) for ob in ob_bands_list]
@@ -1284,6 +1307,23 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[29].value = obj.x1_coord
                     row[30].value = obj.y1_coord
                     row[31].value = obj.z1_coord
+    
+        barCalcListNum = 1
+        totalEqmtCount = len(self.parent.func_vars.equipment_list)
+        print(totalEqmtCount)
+        for col in range(73, 87):
+            for row in ws.iter_rows(min_row=2, max_row=2+totalEqmtCount-1):
+                print(col)
+                if barCalcListNum > len(self.barrierListForExcelOutput)-1:
+                    break
+                if not self.barrierListForExcelOutput[barCalcListNum]:
+                    row[col].value = 0
+                    print(0)
+                else:
+                    row[col].value = self.barrierListForExcelOutput[barCalcListNum][0]
+                    print(self.barrierListForExcelOutput[barCalcListNum][0])
+
+                barCalcListNum+=1
 
         # saving scale
         ws['AE20'] = self.parent.func_vars.known_distance_ft
