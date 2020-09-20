@@ -433,17 +433,21 @@ class Editor(tkinter.Frame):
 
         self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=barrier_name, text=barrier_name, font=("arial.ttf", 15), fill='Black')
 
-        #update this one rcvr
+        #update this one bar
         for obj in self.parent.func_vars.barrier_list:
             if obj.barrier_name == barrier_name:
                 obj.x0_coord = self.x0
                 obj.y0_coord = self.y0
                 obj.x1_coord = self.curX
                 obj.y1_coord = self.curY
-                obj.x0_coord *= round(self.parent.func_vars.master_scale, 2)
-                obj.y0_coord *= round(self.parent.func_vars.master_scale, 2)
-                obj.x1_coord *= round(self.parent.func_vars.master_scale, 2)
-                obj.y1_coord *= round(self.parent.func_vars.master_scale, 2)
+                obj.x0_coord *= self.parent.func_vars.master_scale
+                obj.y0_coord *= self.parent.func_vars.master_scale
+                obj.x1_coord *= self.parent.func_vars.master_scale
+                obj.y1_coord *= self.parent.func_vars.master_scale
+                obj.x0_coord = round(obj.x0_coord, 2)
+                obj.y0_coord = round(obj.y0_coord, 2)
+                obj.x1_coord = round(obj.x1_coord, 2)
+                obj.y1_coord = round(obj.y1_coord, 2)
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
@@ -773,18 +777,21 @@ class Pane_Toolbox(tkinter.Frame):
                 sound_pressure += 10**(spl/10)
             grd_rcvr[2] = str(round(10*math.log10(sound_pressure),1))
 
-        colorscale = [x for x in range(35, 95, 9)]
-        colorlist = ["black", "maroon2", "purple", "blue", "cyan3", "green3", "yellow3", "DarkOrange1", "OrangeRed2"]
+        colorscale = [x for x in range(35, 95, 10)]
+        colorlist = ["black", "blue", "purple", "cyan3", "green3", "yellow3", "DarkOrange1", "OrangeRed2", "maroon2"]
         for grid_rcvr in grid_receiver_list:
             x = grid_rcvr[0]/self.parent.func_vars.master_scale
             y = grid_rcvr[1]/self.parent.func_vars.master_scale
             level = grid_rcvr[2]
             textcolor = "black"
             for colorrange, color in zip(colorscale, colorlist):
-                if int(float(level)) > colorrange:
+                consider_level = int(round(float(level), 0))
+                print("colorrange", colorrange)
+                print("considerlevel", consider_level)
+                if consider_level >= colorrange:
                     textcolor = color
 
-            self.parent.editor.canvas.create_text((x, y), tag="grid_level", text=level, font=("arialbd.ttf", 10), fill=textcolor)
+            self.parent.editor.canvas.create_text((x, y), tag="grid_level", text=str(consider_level), font=("arialbd.ttf", 10), fill=textcolor)
 
     def set_scale(self):
         self.parent.editor.canvas.bind("<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
