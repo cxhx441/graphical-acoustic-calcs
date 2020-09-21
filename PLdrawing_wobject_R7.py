@@ -205,7 +205,7 @@ class Editor(tkinter.Frame):
         self.canvas_size_factor = 1
         self.canvasWidth = self.screen_width * self.canvas_size_factor
         self.canvasHeight = self.screen_height * self.canvas_size_factor
-        self.canvasWidth -= 1000 # otherwise window is off the screen on home pc
+        self.canvasWidth -= 2000 # otherwise window is off the screen on home pc
         self.canvasHeight -= 250 # otherwise window is off the screen on home pc
         self.canvas = tkinter.Canvas(self, width=self.canvasWidth , height=self.canvasHeight, cursor="cross")
 
