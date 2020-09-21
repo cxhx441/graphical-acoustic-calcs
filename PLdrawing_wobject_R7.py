@@ -916,7 +916,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
             for col_idx in range(len(self.equipment_tree_rows[0])):
                 maxWidth = self.maxWidths[col_idx]
                 for row in self.equipment_tree_rows:
-                    currentWidth = self.myFont.measure(str(row[col_idx]))
+                    try:
+                        currentWidth = self.myFont.measure(str(round(float(row[col_idx]))))
+                    except ValueError:
+                        currentWidth = self.myFont.measure(str(row[col_idx]))
                     if currentWidth > maxWidth:
                         maxWidth = currentWidth
                 self.maxWidths[col_idx] = maxWidth
