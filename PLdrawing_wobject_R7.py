@@ -1197,6 +1197,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         return [round(barrier_IL,1), bar_height_to_use, distance_source2receiver_horizontal, distance_source2bar_horizontal, distance_source2barrier_top, distance_receiver2barrier_top, distance_source2receiver_propogation, path_length_difference, "OB-Fresnel"]
 
     def update_est_noise_levels(self):
+        barrierListForExcelOutput_curData = []
         self.barrierListForExcelOutput = [["barrier loss", "eqmt", "rcvr", "bar", "eqmt height", "rcvr height", "bar height", "source to receiver", "source to bar (ft)", "source to bar top", "rcvr to bar top", "direct path", "PLD", "Barrier method", "noise data (if OB Fresnel used)"]]
         for rcvr in self.parent.func_vars.receiver_list:
             print(f"r_name: {rcvr.r_name} x: {rcvr.x_coord}, y: {rcvr.y_coord}, z: {rcvr.z_coord}")
