@@ -1203,13 +1203,13 @@ class Pane_Eqmt_Info(tkinter.Frame):
             sound_pressure = 0
             for eqmt in self.parent.func_vars.equipment_list:
                 if eqmt.sound_ref_dist == 0:
-                    sound_power = eqmt.sound_level
+                    sound_power = eqmt.sound_level + 10*math.log10(eqmt.count)
                 else:
                     q = eqmt.tested_q #need to update this
                     r = eqmt.sound_ref_dist*0.308
                     lp = eqmt.sound_level
                     b = q/(4*math.pi*r**2)
-                    sound_power = lp + abs(10*math.log10(b))
+                    sound_power = lp + abs(10*math.log10(b)) + 10*math.log10(eqmt.count)
                 distance = math.sqrt((rcvr.x_coord-eqmt.x_coord)**2 + (rcvr.y_coord - eqmt.y_coord)**2 + (rcvr.z_coord - eqmt.z_coord)**2)
                 try:
                     q = eqmt.installed_q
