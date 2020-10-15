@@ -1292,7 +1292,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         ws = wb['Input LwA_XYZ']
 
         for obj in self.parent.func_vars.equipment_list:
-            for row in ws.iter_rows(max_row=100):
+            for row in ws.iter_rows(max_row=2000):
                 if row[1].value == None:
                     break
                 if row[1].value.replace(" ","-") == obj.eqmt_tag.replace(" ", "-"):
@@ -1300,7 +1300,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[20].value = obj.y_coord
 
         for obj in self.parent.func_vars.receiver_list:
-            for row in ws.iter_rows(max_row=100):
+            for row in ws.iter_rows(max_row=2000):
                 if row[25].value == None:
                     break
                 if row[25].value.replace(" ","-") == obj.r_name.replace(" ", "-"):
@@ -1308,7 +1308,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[27].value = obj.y_coord
 
         for obj in self.parent.func_vars.barrier_list:
-            for row in ws.iter_rows(min_row=24, max_row=100):
+            for row in ws.iter_rows(min_row=24, max_row=2000):
                 if row[25].value == None:
                     break
                 if row[25].value.replace(" ","-") == obj.barrier_name.replace(" ", "-"):
