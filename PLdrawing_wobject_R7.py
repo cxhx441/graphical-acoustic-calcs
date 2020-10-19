@@ -1035,6 +1035,13 @@ class Pane_Eqmt_Info(tkinter.Frame):
         return int(round(barrier_IL,0))
 
     def ARI_barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z):
+        #fixing escape on error with same barrier coordinate
+        if bar_x0 == bar_x1:
+            bar_x0 += 0.0001
+            print("corrected bar_x0==bar_x1 error")
+        if bar_y0 == bar_y1:
+            bar_y0 += 0.0001
+            print("corrected bar_y0==bar_y1 error")
         #testing if line of sight is broken along HORIZONTAL plane
         eqmt_point = CraigsFunFunctions.Point(eqmt_x, eqmt_y)
         receiver_point = CraigsFunFunctions.Point(rcvr_x, rcvr_y)
@@ -1112,6 +1119,13 @@ class Pane_Eqmt_Info(tkinter.Frame):
         return [barrier_IL, bar_height_to_use, distance_source2receiver_horizontal, distance_source2bar_horizontal, distance_source2barrier_top, distance_receiver2barrier_top, distance_source2receiver_propogation, path_length_difference, "ARI"]
 
     def OB_fresnel_barrier_IL_calc(self, eqmt_x, eqmt_y, eqmt_z, hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000, eqmt_level, bar_x0, bar_y0, bar_z0, bar_x1, bar_y1, bar_z1, rcvr_x, rcvr_y, rcvr_z):
+        #fixing escape on error with same barrier coordinate
+        if bar_x0 == bar_x1:
+            bar_x0 += 0.0001
+            print("corrected bar_x0==bar_x1 error")
+        if bar_y0 == bar_y1:
+            bar_y0 += 0.0001
+            print("corrected bar_y0==bar_y1 error")
         ob_levels_list = [hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000]
         ob_bands_list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
         #testing if line of sight is broken along horizontal plane
@@ -1318,7 +1332,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[29].value = obj.x1_coord
                     row[30].value = obj.y1_coord
                     row[31].value = obj.z1_coord
-    
+
         barCalcListNum = 1
         totalEqmtCount = len(self.parent.func_vars.equipment_list)
         print(totalEqmtCount)
