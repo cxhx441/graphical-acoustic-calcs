@@ -1320,6 +1320,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                         spl = 1000
 
                 elif self.parent.func_vars.ignore_matrix[eqmt_index][rcvr_index] != None:
+                    self.barrierListForExcelOutput.append(barrierListForExcelOutput_curData)
                     spl = 0
                 sound_pressure += 10**(spl/10)
                 # print(f"eqmt, x: {eqmt.x_coord}, y: {eqmt.y_coord}, z: {eqmt.z_coord}, lwa: {round(sound_power,0)}, IL: {round(eqmt.insertion_loss,0)}, distance: {round(distance,1)}, attenuation: {round(attenuation,1)}")
