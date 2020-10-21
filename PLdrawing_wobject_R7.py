@@ -1051,7 +1051,20 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.ignore_matrix_tree_rows = self.parent.func_vars.ignore_matrix
         for eqmt, listy in zip(self.parent.func_vars.equipment_list, self.parent.func_vars.ignore_matrix):
             listy.insert(0, eqmt.eqmt_tag)
+        self.maxWidths = []
 
+        #create widths
+        for item in self.ignore_matrix_tree_columns:
+            self.maxWidths.append(self.myFont.measure(str(item)))
+
+        #getting max widths
+        for col_idx in range(len(self.ignore_matrix_tree_rows[0])):
+            maxWidth = self.maxWidths[col_idx]
+            for row in self.ignore_matrix_tree_rows:
+                currentWidth = self.myFont.measure(str(row[col_idx]))
+                if currentWidth > maxWidth:
+                    maxWidth = currentWidth
+            self.maxWidths[col_idx] = maxWidth
 
         # initializing barrier tree
         self.ignore_matrix_tree = tkinter.ttk.Treeview(self, columns=self.ignore_matrix_tree_columns, show='headings')
@@ -1059,7 +1072,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         # adding columns and rows
         for col in self.ignore_matrix_tree_columns:
             self.ignore_matrix_tree.heading(col, text=col)
-            self.ignore_matrix_tree.column(col, minwidth=75, width=75, stretch=0)
+            self.ignore_matrix_tree.column(col, minwidth=15, width=maxWidth+25, stretch=0)
         for i, value in enumerate(self.ignore_matrix_tree_rows):
             self.ignore_matrix_tree.insert("", "end", values=value, tags=self.myFont)
 
