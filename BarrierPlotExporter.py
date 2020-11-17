@@ -68,8 +68,8 @@ def exportBarrierPlots(imported_list):
         plt.ylim(0, max(EQMT_HEIGHT, RCVR_HEIGHT, BAR_HEIGHT)+10)
 
         plt.title(TITLE, fontsize=fontsize_subtitle)
-        plt.xlabel('Height (ft)', fontsize=fontsize_axis)
-        plt.ylabel('Distance (ft)', fontsize=fontsize_axis)
+        plt.xlabel('Distance (ft)', fontsize=fontsize_axis)
+        plt.ylabel('Height (ft)', fontsize=fontsize_axis)
         plt.suptitle("Noise Barrier - Geometry", fontsize=fontsize_title)
         plt.grid(which='major', axis='both', color='gray', linestyle='-.', linewidth=0.5)
 
