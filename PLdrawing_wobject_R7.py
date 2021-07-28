@@ -16,7 +16,7 @@ import BarrierPlotExporter
 BED_IMAGE_FILEPATH = "bed_image.png"
 TOP_IMAGE_FILEPATH = "top_image.png"
 XL_FILEPATH = 'Aegis San Rafael - PL (revised) - 2020.08.17.xlsm'
-XL_FILEPATH_SAVE = 'Aegis San Rafael - PL (revised) - 2020.08.17 - exported.xlsm'
+XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + ' - exported.xlsm'
 
 TAKE_ARI_BARRIER = True
 TAKE_OB_FRESNAL_BARRIER = True
