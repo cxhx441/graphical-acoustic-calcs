@@ -261,21 +261,23 @@ class Editor(tkinter.Frame):
         '''initialize receivers and equipment boxes and barriers'''
         fontsize = 10
         for eqmt in self.parent.func_vars.equipment_list:
-            random_8bit_color = CraigsFunFunctions.random_8bit_color()
+            # random_8bit_color = CraigsFunFunctions.random_8bit_color()
+            green_hex_color = CraigsFunFunctions.rgb_to_hex((0, 254, 0))
             offset = 20
             x = eqmt.x_coord/self.parent.func_vars.master_scale
             y = eqmt.y_coord/self.parent.func_vars.master_scale
             # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
-            self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=eqmt.eqmt_tag, fill=random_8bit_color, activeoutline='red')
+            self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=eqmt.eqmt_tag, fill=green_hex_color, activeoutline='red')
             self.canvas.create_text(x, y, tag=eqmt.eqmt_tag, text=eqmt.eqmt_tag, font=("arial.ttf", fontsize), fill='Black')
 
         for rcvr in self.parent.func_vars.receiver_list:
-            random_8bit_color = CraigsFunFunctions.random_8bit_color()
+            # random_8bit_color = CraigsFunFunctions.random_8bit_color()
+            red_hex_color = CraigsFunFunctions.rgb_to_hex((254, 0, 0))
             offset = 20
             x = rcvr.x_coord/self.parent.func_vars.master_scale
             y = rcvr.y_coord/self.parent.func_vars.master_scale
             # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
-            self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=rcvr.r_name, fill=random_8bit_color, activeoutline='red')
+            self.rectPerm = self.canvas.create_rectangle(x-offset, y-offset, x+offset, y+offset, tag=rcvr.r_name, fill=red_hex_color, activeoutline='red')
             self.canvas.create_text(x, y, tag=rcvr.r_name, text=rcvr.r_name, font=("arial.ttf", fontsize), fill='Black')
 
         for bar in self.parent.func_vars.barrier_list:
@@ -369,13 +371,14 @@ class Editor(tkinter.Frame):
         self.get_current_mouse_pos(event)
         self.canvas.delete(self.temp_rect)
 
-        random_8bit_color = CraigsFunFunctions.random_8bit_color()
+        # random_8bit_color = CraigsFunFunctions.random_8bit_color()
+        green_hex_color = CraigsFunFunctions.rgb_to_hex((0, 254, 0))
 
         eqmt_tag=self.parent.pane_eqmt_info.current_equipment[1] # i think this is grabbing from the tree
         tagged_objects = self.canvas.find_withtag(eqmt_tag)
         for tagged_object in tagged_objects:
             self.canvas.delete(tagged_object)
-        self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=eqmt_tag, fill=random_8bit_color, activeoutline='red')
+        self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=eqmt_tag, fill=green_hex_color, activeoutline='red')
 
         self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=eqmt_tag, text=eqmt_tag, font=("arial.ttf", 15), fill='Black')
 
@@ -405,13 +408,14 @@ class Editor(tkinter.Frame):
         self.get_current_mouse_pos(event)
         self.canvas.delete(self.temp_rect)
 
-        random_8bit_color = CraigsFunFunctions.random_8bit_color()
+        # random_8bit_color = CraigsFunFunctions.random_8bit_color()
+        red_hex_color = CraigsFunFunctions.rgb_to_hex((254, 0, 0))
 
         r_name=self.parent.pane_eqmt_info.current_receiver[0]
         tagged_objects = self.canvas.find_withtag(r_name)
         for tagged_object in tagged_objects:
             self.canvas.delete(tagged_object)
-        self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=r_name, fill=random_8bit_color, activeoutline='red')
+        self.rectPerm = self.canvas.create_rectangle(self.x0, self.y0, self.curX, self.curY, tag=r_name, fill=red_hex_color, activeoutline='red')
 
         self.canvas.create_text((self.x0 + (self.curX-self.x0)/2, self.y0 + (self.curY - self.y0)/2), tag=r_name, text=r_name, font=("arial.ttf", 15), fill='Black')
 
