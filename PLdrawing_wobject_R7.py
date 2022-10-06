@@ -5,7 +5,7 @@ import openpyxl
 import math
 import random
 import sys
-sys.path.append('C:/Users/cxhx4/Dropbox/00 - Cloud Documents/06 - Python Scripts')
+sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Python Scripts')
 import CraigsFunFunctions
 import numpy
 import tkinter.font
@@ -15,7 +15,7 @@ import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
 TOP_IMAGE_FILEPATH = "top_image.png"
-XL_FILEPATH = 'Aegis San Rafael - PL (revised) - 2020.08.17.xlsm'
+XL_FILEPATH = 'Aegis San Rafael - PL - 2020.08.17.xlsm'
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + ' - exported.xlsm'
 
 TAKE_ARI_BARRIER = True
@@ -101,7 +101,7 @@ class FuncVars(object):
         column = 91 # 1-index based
         row = 2
         self.ignore_matrix = list()
-        for eqmt_coord in range(len(self.equipment_list)): 
+        for eqmt_coord in range(len(self.equipment_list)):
             ignore_rcvrs_list = list()
             for rcvr_coord in range(len(self.receiver_list)):
                 ignore_rcvrs_list.append(ws.cell(row=row+eqmt_coord, column=column+rcvr_coord).value)
@@ -1318,7 +1318,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                         spl = sound_power-eqmt.insertion_loss-attenuation-barrier_IL
                         # if barriermethod == ' - OB_fresnel':
                         print(f"eqmt: __{eqmt.eqmt_tag}, rcvr: __{rcvr.r_name}, bar: __{used_barrier_name}, barrier IL: __{barrier_IL}")
-                
+
                     except (ValueError, ZeroDivisionError):
                         print('MATH DOMAIN ERROR OCCURED')
                         spl = 1000
@@ -1389,7 +1389,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     row[29].value = obj.x1_coord
                     row[30].value = obj.y1_coord
                     row[31].value = obj.z1_coord
-    
+
         barCalcListNum = 1
         totalEqmtCount = len(self.parent.func_vars.equipment_list)
         print(totalEqmtCount)
