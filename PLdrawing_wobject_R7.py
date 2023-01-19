@@ -5,7 +5,7 @@ import openpyxl
 import math
 import random
 import sys
-sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Python Scripts')
+sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Code/01 - Python Scripts')
 import CraigsFunFunctions
 import numpy
 import tkinter.font
