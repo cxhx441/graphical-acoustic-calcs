@@ -5,6 +5,7 @@ import openpyxl
 import math
 import random
 import sys
+import shutil
 
 # sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Code/01 - Python Scripts')
 import utils
@@ -17,6 +18,7 @@ import BarrierPlotExporter
 BED_IMAGE_FILEPATH = "bed_image.png"
 TOP_IMAGE_FILEPATH = "top_image.png"
 XL_FILEPATH = "Aegis San Rafael - PL - 2020.08.17.xlsm"
+XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 15 bold"
 
@@ -29,7 +31,8 @@ TAKE_OB_FRESNAL_BARRIER = False
 # setting columns
 # EQMT
 # open workbook
-wb = openpyxl.load_workbook(XL_FILEPATH, data_only=True)
+shutil.copyfile(XL_FILEPATH, XL_TEMP_FILEPATH)
+wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
 ws = wb["Input LwA_XYZ"]
 EQMT_COUNT = ws["A"]
 EQMT_TAG = ws["B"]
@@ -983,51 +986,51 @@ class Editor(tkinter.Frame):
             self.current_text_coords[1] + y_shifter,
         )
 
-        for obj in self.parent.func_vars.equipment_list:
-            if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
-                obj.x_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
+        # for obj in self.parent.func_vars.equipment_list:
+        #     if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
+        #         obj.x_coord = (
+        #             self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.y_coord = (
+        #             self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.x_coord = round(obj.x_coord, 2)
+        #         obj.y_coord = round(obj.y_coord, 2)
 
-        for obj in self.parent.func_vars.receiver_list:
-            if obj.r_name == self.tag_rcvr_or_barr_num:
-                obj.x_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
+        # for obj in self.parent.func_vars.receiver_list:
+        #     if obj.r_name == self.tag_rcvr_or_barr_num:
+        #         obj.x_coord = (
+        #             self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.y_coord = (
+        #             self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.x_coord = round(obj.x_coord, 2)
+        #         obj.y_coord = round(obj.y_coord, 2)
 
-        for obj in self.parent.func_vars.barrier_list:
-            if obj.barrier_name == self.tag_rcvr_or_barr_num:
-                obj.x0_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y0_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x1_coord = (
-                    self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y1_coord = (
-                    self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x0_coord = round(obj.x0_coord, 2)
-                obj.y0_coord = round(obj.y0_coord, 2)
-                obj.x1_coord = round(obj.x1_coord, 2)
-                obj.y1_coord = round(obj.y1_coord, 2)
+        # for obj in self.parent.func_vars.barrier_list:
+        #     if obj.barrier_name == self.tag_rcvr_or_barr_num:
+        #         obj.x0_coord = (
+        #             self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.y0_coord = (
+        #             self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.x1_coord = (
+        #             self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.y1_coord = (
+        #             self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
+        #         )
+        #         obj.x0_coord = round(obj.x0_coord, 2)
+        #         obj.y0_coord = round(obj.y0_coord, 2)
+        #         obj.x1_coord = round(obj.x1_coord, 2)
+        #         obj.y1_coord = round(obj.y1_coord, 2)
 
-        self.parent.pane_eqmt_info.update_est_noise_levels()
-        self.parent.pane_eqmt_info.generateEqmtTree()
-        self.parent.pane_eqmt_info.generateRcvrTree()
-        self.parent.pane_eqmt_info.generateBarrierTree()
+        # self.parent.pane_eqmt_info.update_est_noise_levels()
+        # self.parent.pane_eqmt_info.generateEqmtTree()
+        # self.parent.pane_eqmt_info.generateRcvrTree()
+        # self.parent.pane_eqmt_info.generateBarrierTree()
 
     def shift_click_release(self, event):
         self.get_current_mouse_pos(event)
@@ -2429,7 +2432,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.current_equipment = None
 
     def onExportListButton(self):
-        wb = openpyxl.load_workbook(XL_FILEPATH, keep_vba=True, data_only=False)
+        wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, keep_vba=True, data_only=False)
         ws = wb["Input LwA_XYZ"]
 
         for obj in self.parent.func_vars.equipment_list:
