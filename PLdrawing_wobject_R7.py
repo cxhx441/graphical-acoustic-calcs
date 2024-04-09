@@ -1828,11 +1828,11 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.ignore_matrix_tree_columns = ["eqmt"]
         for rcvr in self.parent.func_vars.receiver_list:
             self.ignore_matrix_tree_columns.append(str(rcvr.r_name))
-        self.ignore_matrix_tree_rows = self.parent.func_vars.ignore_matrix
-        for eqmt, listy in zip(
+        self.ignore_matrix_tree_rows = []
+        for eqmt, ignore_list in zip(
             self.parent.func_vars.equipment_list, self.parent.func_vars.ignore_matrix
         ):
-            listy.insert(0, eqmt.eqmt_tag)
+            self.ignore_matrix_tree_rows.append([eqmt.eqmt_tag] + ignore_list.copy())
         self.maxWidths = []
 
         # create widths
