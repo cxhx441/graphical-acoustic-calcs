@@ -1233,6 +1233,7 @@ class Pane_Toolbox(tkinter.Frame):
                     lp = eqmt.sound_level
                     b = q / (4 * math.pi * r**2)
                     sound_power = lp + abs(10 * math.log10(b))
+                sound_power += 10 * math.log10(eqmt.count)
                 distance = math.sqrt(
                     (rcvr_x_coord - eqmt.x_coord) ** 2
                     + (rcvr_y_coord - eqmt.y_coord) ** 2
