@@ -1672,19 +1672,19 @@ class Pane_Eqmt_Info(tkinter.Frame):
             for i in self.parent.func_vars.equipment_list:
                 self.equipment_tree_rows.append(
                     [
-                        i.count,
+                        round(i.count, 2),
                         i.eqmt_tag,
                         i.path,
                         i.make,
                         i.model,
-                        i.sound_level,
-                        i.sound_ref_dist,
-                        i.tested_q,
-                        i.installed_q,
-                        i.insertion_loss,
-                        i.x_coord,
-                        i.y_coord,
-                        i.z_coord,
+                        round(i.sound_level, 1),
+                        round(i.sound_ref_dist, 2),
+                        round(i.tested_q, 1),
+                        round(i.installed_q, 1),
+                        round(i.insertion_loss, 1),
+                        round(i.x_coord, 2),
+                        round(i.y_coord, 2),
+                        round(i.z_coord, 2),
                     ]
                 )
 
@@ -1718,19 +1718,19 @@ class Pane_Eqmt_Info(tkinter.Frame):
             for i in self.parent.func_vars.equipment_list:
                 self.equipment_tree_rows.append(
                     [
-                        i.count,
+                        round(i.count, 2),
                         i.eqmt_tag,
                         i.path,
                         i.make,
                         i.model,
-                        i.sound_level,
-                        i.sound_ref_dist,
-                        i.tested_q,
-                        i.installed_q,
-                        i.insertion_loss,
-                        i.x_coord,
-                        i.y_coord,
-                        i.z_coord,
+                        round(i.sound_level, 1),
+                        round(i.sound_ref_dist, 2),
+                        round(i.tested_q, 1),
+                        round(i.installed_q, 1),
+                        round(i.insertion_loss, 1),
+                        round(i.x_coord, 2),
+                        round(i.y_coord, 2),
+                        round(i.z_coord, 2),
                     ]
                 )
 
@@ -1781,11 +1781,11 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.receiver_tree_rows.append(
                     [
                         i.r_name,
-                        i.x_coord,
-                        i.y_coord,
-                        i.z_coord,
-                        i.sound_limit,
-                        i.predicted_sound_level,
+                        round(i.x_coord, 2),
+                        round(i.y_coord, 2),
+                        round(i.z_coord, 2),
+                        round(i.sound_limit, 1),
+                        round(i.predicted_sound_level, 1),
                     ]
                 )
             for i, value in enumerate(self.receiver_tree_rows):
@@ -1797,7 +1797,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 "x",
                 "y",
                 "z",
-                "sound limit",
+                "dBA limit",
                 "est. level",
             ]
             self.receiver_tree_rows = []
@@ -1812,11 +1812,11 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.receiver_tree_rows.append(
                     [
                         i.r_name,
-                        i.x_coord,
-                        i.y_coord,
-                        i.z_coord,
-                        i.sound_limit,
-                        i.predicted_sound_level,
+                        round(i.x_coord, 2),
+                        round(i.y_coord, 2),
+                        round(i.z_coord, 2),
+                        round(i.sound_limit, 1),
+                        round(i.predicted_sound_level, 1),
                     ]
                 )
             print(self.receiver_tree_rows)
@@ -1852,12 +1852,12 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.barrier_tree_rows.append(
                     [
                         i.barrier_name,
-                        i.x0_coord,
-                        i.y0_coord,
-                        i.z0_coord,
-                        i.x1_coord,
-                        i.y1_coord,
-                        i.z1_coord,
+                        round(i.x0_coord, 2),
+                        round(i.y0_coord, 2),
+                        round(i.z0_coord, 2),
+                        round(i.x1_coord, 2),
+                        round(i.y1_coord, 2),
+                        round(i.z1_coord, 2),
                     ]
                 )
             for i, value in enumerate(self.barrier_tree_rows):
@@ -1885,12 +1885,12 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.barrier_tree_rows.append(
                     [
                         i.barrier_name,
-                        i.x0_coord,
-                        i.y0_coord,
-                        i.z0_coord,
-                        i.x1_coord,
-                        i.y1_coord,
-                        i.z1_coord,
+                        round(i.x0_coord, 2),
+                        round(i.y0_coord, 2),
+                        round(i.z0_coord, 2),
+                        round(i.x1_coord, 2),
+                        round(i.y1_coord, 2),
+                        round(i.z1_coord, 2),
                     ]
                 )
 
@@ -1952,13 +1952,16 @@ class Pane_Eqmt_Info(tkinter.Frame):
         )
 
         # adding columns and rows
-        for col in self.ignore_matrix_tree_columns:
+        for i, col in enumerate(self.ignore_matrix_tree_columns):
             self.ignore_matrix_tree.heading(col, text=col)
-            self.ignore_matrix_tree.column(
-                col, minwidth=15, width=maxWidth + 25, stretch=0
-            )
-        for i, value in enumerate(self.ignore_matrix_tree_rows):
-            self.ignore_matrix_tree.insert("", "end", values=value, tags=self.myFont)
+            if i == 0:
+                self.ignore_matrix_tree.column( col, minwidth=5, width=maxWidth + 85, stretch=0)
+            else:
+                self.ignore_matrix_tree.column( col, minwidth=5, width=maxWidth + 5, stretch=0)
+
+        for i, row in enumerate(self.ignore_matrix_tree_rows):
+            txt = [x if x != None else "_" for x in row]
+            self.ignore_matrix_tree.insert("", "end", values=txt, tags=self.myFont)
 
     def ARI_interpolation(self, pld, lowerIL, upperIL, lowerPLD, upperPLD):
         diff_in_reduction = (pld - lowerPLD) / (upperPLD - lowerPLD)
