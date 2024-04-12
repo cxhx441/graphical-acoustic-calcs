@@ -240,6 +240,7 @@ class FuncVars(object):
             else 1.0
         )
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
+        self.quickdraw_bool = tkinter.IntVar()
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
@@ -671,9 +672,38 @@ class Editor(tkinter.Frame):
                 # print(obj.x_coord)
                 # print(obj.y_coord)
 
+        self.parent.pane_eqmt_info.focused_tree_children = (
+            self.parent.pane_eqmt_info.equipment_tree.get_children()
+        )
+        idx = self.parent.pane_eqmt_info.equipment_tree.index(
+            self.parent.pane_eqmt_info.focused_line
+        )
+
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
         self.parent.pane_eqmt_info.generateEqmtTree()
+
+        children = self.parent.pane_eqmt_info.equipment_tree.get_children()
+        to_focus = children[idx]
+
+        if self.parent.func_vars.quickdraw_bool.get() == 1:
+            self.parent.pane_eqmt_info.focused_line = (
+                self.parent.pane_eqmt_info.equipment_tree.next(to_focus)
+            )
+            if self.parent.pane_eqmt_info.focused_line != "":
+                self.parent.pane_eqmt_info.equipment_tree.selection_set(
+                    self.parent.pane_eqmt_info.focused_line
+                )
+                self.parent.pane_eqmt_info.current_equipment = (
+                    self.parent.pane_eqmt_info.equipment_tree.item(
+                        self.parent.pane_eqmt_info.focused_line
+                    )["values"]
+                )
+            else:
+                self.parent.pane_eqmt_info.deselect_item_from_trees()
+        else:
+            self.parent.pane_eqmt_info.focused_line = to_focus
+            self.parent.pane_eqmt_info.equipment_tree.selection_set(to_focus)
 
     def drawing_rcvr_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
@@ -724,8 +754,37 @@ class Editor(tkinter.Frame):
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
+        self.parent.pane_eqmt_info.focused_tree_children = (
+            self.parent.pane_eqmt_info.receiver_tree.get_children()
+        )
+        idx = self.parent.pane_eqmt_info.receiver_tree.index(
+            self.parent.pane_eqmt_info.focused_line
+        )
+
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
+
+        children = self.parent.pane_eqmt_info.receiver_tree.get_children()
+        to_focus = children[idx]
+
+        if self.parent.func_vars.quickdraw_bool.get() == 1:
+            self.parent.pane_eqmt_info.focused_line = (
+                self.parent.pane_eqmt_info.receiver_tree.next(to_focus)
+            )
+            if self.parent.pane_eqmt_info.focused_line != "":
+                self.parent.pane_eqmt_info.receiver_tree.selection_set(
+                    self.parent.pane_eqmt_info.focused_line
+                )
+                self.parent.pane_eqmt_info.current_receiver = (
+                    self.parent.pane_eqmt_info.receiver_tree.item(
+                        self.parent.pane_eqmt_info.focused_line
+                    )["values"]
+                )
+            else:
+                self.parent.pane_eqmt_info.deselect_item_from_trees()
+        else:
+            self.parent.pane_eqmt_info.focused_line = to_focus
+            self.parent.pane_eqmt_info.receiver_tree.selection_set(to_focus)
 
     def drawing_barrier_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
@@ -779,9 +838,38 @@ class Editor(tkinter.Frame):
                 obj.x1_coord = round(obj.x1_coord, 2)
                 obj.y1_coord = round(obj.y1_coord, 2)
 
-        self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_eqmt_info.focused_tree_children = (
+            self.parent.pane_eqmt_info.barrier_tree.get_children()
+        )
+        idx = self.parent.pane_eqmt_info.barrier_tree.index(
+            self.parent.pane_eqmt_info.focused_line
+        )
+
         self.parent.pane_eqmt_info.generateRcvrTree()
         self.parent.pane_eqmt_info.generateBarrierTree()
+        self.parent.pane_eqmt_info.update_est_noise_levels()
+
+        children = self.parent.pane_eqmt_info.barrier_tree.get_children()
+        to_focus = children[idx]
+
+        if self.parent.func_vars.quickdraw_bool.get() == 1:
+            self.parent.pane_eqmt_info.focused_line = (
+                self.parent.pane_eqmt_info.barrier_tree.next(to_focus)
+            )
+            if self.parent.pane_eqmt_info.focused_line != "":
+                self.parent.pane_eqmt_info.barrier_tree.selection_set(
+                    self.parent.pane_eqmt_info.focused_line
+                )
+                self.parent.pane_eqmt_info.current_barrier = (
+                    self.parent.pane_eqmt_info.barrier_tree.item(
+                        self.parent.pane_eqmt_info.focused_line
+                    )["values"]
+                )
+            else:
+                self.parent.pane_eqmt_info.deselect_item_from_trees()
+        else:
+            self.parent.pane_eqmt_info.focused_line = to_focus
+            self.parent.pane_eqmt_info.barrier_tree.selection_set(to_focus)
 
     def measureing_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
@@ -1116,6 +1204,14 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_draw_barrier = tkinter.Button(
             self, text="Draw Barrier", command=self.draw_barrier, font=(None, 15)
         )
+        self.checkbox_quickdraw = tkinter.Checkbutton(
+            self,
+            text="Quickdraw",
+            variable=self.parent.func_vars.quickdraw_bool,
+            onvalue=1,
+            offvalue=0,
+            font=(None, 15),
+        )
         self.button_rotate_eqmt_drawing = tkinter.Button(
             self,
             text="Eqmt Drawing - Rotate",
@@ -1152,6 +1248,7 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_draw_equipment.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
         self.button_draw_receiver.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
         self.button_draw_barrier.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
+        self.checkbox_quickdraw.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
         self.button_rotate_eqmt_drawing.grid(
             row=0, column=2, sticky=tkinter.N + tkinter.W
         )
@@ -2409,28 +2506,30 @@ class Pane_Eqmt_Info(tkinter.Frame):
 
     def select_item_from_eqmt_tree(self, event):
         self.deselect_item_from_trees()
-        self.current_equipment = self.equipment_tree.focus()
-        self.current_equipment = self.equipment_tree.item(self.current_equipment)[
-            "values"
-        ]
+        self.focused_tree_children = self.equipment_tree.get_children()
+        self.focused_line = self.equipment_tree.focus()
+        self.current_equipment = self.equipment_tree.item(self.focused_line)["values"]
         print(self.current_equipment)
 
     def select_item_from_rcvr_tree(self, event):
         self.deselect_item_from_trees()
-        self.current_receiver = self.receiver_tree.focus()
-        self.current_receiver = self.receiver_tree.item(self.current_receiver)["values"]
+        self.focused_tree_children = self.receiver_tree.get_children()
+        self.focused_line = self.receiver_tree.focus()
+        self.current_receiver = self.receiver_tree.item(self.focused_line)["values"]
         print(self.current_receiver)
 
     def select_item_from_barrier_tree(self, event):
         self.deselect_item_from_trees()
-        self.current_barrier = self.barrier_tree.focus()
-        self.current_barrier = self.barrier_tree.item(self.current_barrier)["values"]
+        self.focused_tree_children = self.barrier_tree.get_children()
+        self.focused_line = self.barrier_tree.focus()
+        self.current_barrier = self.barrier_tree.item(self.focused_line)["values"]
         print(self.current_barrier)
 
     def deselect_item_from_trees(self):
         self.current_barrier = None
         self.current_receiver = None
         self.current_equipment = None
+        self.focused_tree_children = None
 
     def onExportListButton(self):
         wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, keep_vba=True, data_only=False)
