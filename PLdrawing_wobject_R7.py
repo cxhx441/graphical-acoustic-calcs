@@ -1375,7 +1375,7 @@ class Pane_Toolbox(tkinter.Frame):
                 (x, y),
                 tag="grid_level",
                 text=str(consider_level),
-                font=("arialbd.ttf", 10),
+                font=DRAWING_FONT,
                 fill=textcolor,
             )
 
