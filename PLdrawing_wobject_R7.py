@@ -1645,6 +1645,9 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.ignore_matrix_tree.grid(
             row=8, column=0, padx=400, sticky=tkinter.N + tkinter.W
         )
+        self.directivity_matrix_tree.grid(
+            row=10, column=0, padx=500, sticky=tkinter.N + tkinter.W
+        )
 
     def generateEqmtTree(self):
         try:  # delete tree if already exists
