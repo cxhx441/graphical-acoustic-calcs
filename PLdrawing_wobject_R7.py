@@ -76,6 +76,33 @@ BAR_Z1_COORD = ws["AF"]
 KNOWN_DISTANCE_FT = ws["AE20"]
 SCALE_LINE_DISTANCE_PX = ws["AF20"]
 
+# IGNORE MATRIX
+IGNORE_MATRIX_COL = 91  # 1-index based
+IGNORE_MATRIX_ROW = 2   # 1-index based
+
+# DIRECTIVITY MATRIX
+DIRECTIVITY_MATRIX_COL = 108 # 1-index based
+DIRECTIVITY_MATRIX_ROW = 2   # 1-index based
+
+# ROW/COL VALUES FOR Export List Button
+EQMT_NAME_COL       = 1
+EQMT_X_COORD_COL    = 19
+EQMT_Y_COORD_COL    = 20
+
+RCVR_NAME_COL       = 25
+RCVR_X_COORD_COL    = 26
+RCVR_Y_COORD_COL    = 27
+
+BAR_NAME_COL        = 25
+BAR_START_ROW       = 24 # 1-index based
+BAR_X0_COORD_COL    = 26
+BAR_Y0_COORD_COL    = 27
+BAR_Z0_COORD_COL    = 28
+BAR_X1_COORD_COL    = 29
+BAR_Y1_COORD_COL    = 30
+BAR_Z1_COORD_COL    = 31
+
+BAR_IL_COL_RANGE    = range(73, 88)
 
 class FuncVars(object):
     def __init__(self, parent):
@@ -215,14 +242,14 @@ class FuncVars(object):
             )
 
         # initialize ignore matrix
-        column = 91  # 1-index based
-        row = 2
+        c = IGNORE_MATRIX_COL # 1-index based
+        r = IGNORE_MATRIX_ROW
         self.ignore_matrix = list()
-        for eqmt_coord in range(len(self.equipment_list)):
+        for eqmt_row in range(len(self.equipment_list)):
             ignore_rcvrs_list = list()
-            for rcvr_coord in range(len(self.receiver_list)):
+            for rcvr_col in range(len(self.receiver_list)):
                 ignore_rcvrs_list.append(
-                    ws.cell(row=row + eqmt_coord, column=column + rcvr_coord).value
+                    ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
                 )
             self.ignore_matrix.append(ignore_rcvrs_list)
         # print("ignorematrix")
@@ -2538,42 +2565,42 @@ class Pane_Eqmt_Info(tkinter.Frame):
         wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, keep_vba=True, data_only=False)
         ws = wb["Input LwA_XYZ"]
 
+        # eqmt
         for obj in self.parent.func_vars.equipment_list:
             for row in ws.iter_rows(max_row=100):
-                if row[1].value == None:
+                if row[EQMT_NAME_COL].value == None:
                     break
-                if row[1].value.replace(" ", "-") == obj.eqmt_tag.replace(" ", "-"):
-                    row[19].value = obj.x_coord
-                    row[20].value = obj.y_coord
+                if row[EQMT_NAME_COL].value.replace(" ", "-") == obj.eqmt_tag.replace(" ", "-"):
+                    row[EQMT_X_COORD_COL].value = obj.x_coord
+                    row[EQMT_Y_COORD_COL].value = obj.y_coord
 
+        # receivers
         for obj in self.parent.func_vars.receiver_list:
-            for row in ws.iter_rows(max_row=100):
-                if row[25].value == None:
+            for row in ws.iter_rows():
+                if row[RCVR_NAME_COL].value == None:
                     break
-                if row[25].value.replace(" ", "-") == obj.r_name.replace(" ", "-"):
-                    row[26].value = obj.x_coord
-                    row[27].value = obj.y_coord
+                if row[RCVR_NAME_COL].value.replace(" ", "-") == obj.r_name.replace(" ", "-"):
+                    row[RCVR_X_COORD_COL].value = obj.x_coord
+                    row[RCVR_Y_COORD_COL].value = obj.y_coord
 
         for obj in self.parent.func_vars.barrier_list:
-            for row in ws.iter_rows(min_row=24, max_row=100):
-                if row[25].value == None:
+            for row in ws.iter_rows(min_row=BAR_START_ROW, max_row=100):
+                if row[BAR_NAME_COL].value == None:
                     break
-                if row[25].value.replace(" ", "-") == obj.barrier_name.replace(
+                if row[BAR_NAME_COL].value.replace(" ", "-") == obj.barrier_name.replace(
                     " ", "-"
                 ):
-                    row[26].value = obj.x0_coord
-                    row[27].value = obj.y0_coord
-                    row[28].value = obj.z0_coord
-                    row[29].value = obj.x1_coord
-                    row[30].value = obj.y1_coord
-                    row[31].value = obj.z1_coord
+                    row[BAR_X0_COORD_COL].value = obj.x0_coord
+                    row[BAR_Y0_COORD_COL].value = obj.y0_coord
+                    row[BAR_Z0_COORD_COL].value = obj.z0_coord
+                    row[BAR_X1_COORD_COL].value = obj.x1_coord
+                    row[BAR_Y1_COORD_COL].value = obj.y1_coord
+                    row[BAR_Z1_COORD_COL].value = obj.z1_coord
 
         barCalcListNum = 1
         totalEqmtCount = len(self.parent.func_vars.equipment_list)
-        print(totalEqmtCount)
-        for col in range(73, 88):
+        for col in BAR_IL_COL_RANGE:
             for row in ws.iter_rows(min_row=2, max_row=2 + totalEqmtCount - 1):
-                print(col)
                 if barCalcListNum > len(self.barrierListForExcelOutput) - 1:
                     break
                 if not self.barrierListForExcelOutput[barCalcListNum]:
