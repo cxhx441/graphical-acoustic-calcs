@@ -76,13 +76,21 @@ BAR_Z1_COORD = ws["AF"]
 KNOWN_DISTANCE_FT = ws["AE20"]
 SCALE_LINE_DISTANCE_PX = ws["AF20"]
 
-# IGNORE MATRIX
-IGNORE_MATRIX_COL = 91  # 1-index based
-IGNORE_MATRIX_ROW = 2   # 1-index based
+# SPECIFIC BAR BOOL
+USE_SPECIFIC_BAR_BOOL_CELL = ws["AC19"]
+if type(USE_SPECIFIC_BAR_BOOL_CELL.value) is not bool:
+    raise TypeError("cell must be TRUE or FALSE")
 
+# IGNORE MATRIX
+IGNORE_MATRIX_COL       = 108 # 1-index based
+IGNORE_MATRIX_ROW       = 2   # 1-index based
 # DIRECTIVITY MATRIX
-DIRECTIVITY_MATRIX_COL = 108 # 1-index based
-DIRECTIVITY_MATRIX_ROW = 2   # 1-index based
+DIRECTIVITY_MATRIX_COL  = 125 # 1-index based
+DIRECTIVITY_MATRIX_ROW  = 2   # 1-index based
+# SPECIFIC BAR MATRIX
+SPECIFIC_BAR_MATRIX_COL = 91  # 1-index based
+SPECIFIC_BAR_MATRIX_ROW = 2   # 1-index based
+
 
 # ROW/COL VALUES FOR Export List Button
 EQMT_NAME_COL       = 1
@@ -265,6 +273,16 @@ class FuncVars(object):
                 directivity_rcvrs_list.append(directivity)
             self.directivity_matrix.append(directivity_rcvrs_list)
 
+        # initialize specific barrier matrix
+        c = SPECIFIC_BAR_MATRIX_COL # 1-index based
+        r = SPECIFIC_BAR_MATRIX_ROW
+        self.specific_bar_matrix = list()
+        for eqmt_row in range(len(self.equipment_list)):
+            spec_bar_rcvrs_list = list()
+            for rcvr_col in range(len(self.receiver_list)):
+                spec_bar = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
+                spec_bar_rcvrs_list.append(spec_bar)
+            self.specific_bar_matrix.append(spec_bar_rcvrs_list)
         # initialize master_scale
         self.old_master_scale = 1.0
         self.known_distance_ft = (
@@ -277,6 +295,12 @@ class FuncVars(object):
         )
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
         self.quickdraw_bool = tkinter.IntVar()
+        self.use_specific_bar_bool = tkinter.BooleanVar()
+        if USE_SPECIFIC_BAR_BOOL_CELL.value is True:
+            self.use_specific_bar_bool.set(True)
+        elif USE_SPECIFIC_BAR_BOOL_CELL.value is False:
+            self.use_specific_bar_bool.set(False)
+
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
@@ -1192,6 +1216,15 @@ class Pane_Toolbox(tkinter.Frame):
             offvalue=0,
             font=(None, 15),
         )
+        self.checkbox_specific_barrier = tkinter.Checkbutton(
+            self,
+            text="Specific Barrier",
+            variable=self.parent.func_vars.use_specific_bar_bool,
+            onvalue=True,
+            offvalue=False,
+            command=self.update_est_noise_levels,
+            font=(None, 15),
+        )
         self.button_rotate_eqmt_drawing = tkinter.Button(
             self,
             text="Eqmt Drawing - Rotate",
@@ -1229,6 +1262,7 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_draw_receiver.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
         self.button_draw_barrier.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
         self.checkbox_quickdraw.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
+        self.checkbox_specific_barrier.grid(row=4, column=1, sticky=tkinter.N + tkinter.W)
         self.button_rotate_eqmt_drawing.grid(
             row=0, column=2, sticky=tkinter.N + tkinter.W
         )
@@ -1241,6 +1275,9 @@ class Pane_Toolbox(tkinter.Frame):
         self.button_draw_grid.grid(row=0, column=3, sticky=tkinter.N + tkinter.W)
         self.button_update_grid.grid(row=1, column=3, sticky=tkinter.N + tkinter.W)
         self.button_export_bar_file.grid(row=2, column=3, sticky=tkinter.N + tkinter.W)
+
+    def update_est_noise_levels(self):
+        self.parent.pane_eqmt_info.update_est_noise_levels()
 
     def export_bar_file(self):
         with open("bar_export_list.csv", mode="w", newline="") as csvfile:
@@ -1619,6 +1656,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.generateBarrierTree()
         self.generateIgnoreMatrixTree()
         self.generateDirectivityMatrixTree()
+        self.generateSpecificBarrerMatrixTree()
 
         self.equipment_tree.bind("<Double-1>", self.open_item_editor_window)
         self.receiver_tree.bind("<Double-1>", self.open_item_editor_window)
@@ -1647,6 +1685,9 @@ class Pane_Eqmt_Info(tkinter.Frame):
         )
         self.directivity_matrix_tree.grid(
             row=10, column=0, padx=500, sticky=tkinter.N + tkinter.W
+        )
+        self.specific_bar_matrix_tree.grid(
+            row=10, column=0, padx=800, sticky=tkinter.N + tkinter.W
         )
 
     def generateEqmtTree(self):
@@ -1988,6 +2029,48 @@ class Pane_Eqmt_Info(tkinter.Frame):
         for i, row in enumerate(self.dir_matrix_tree_rows):
             txt = [x if x != 0 else "_" for x in row]
             self.directivity_matrix_tree.insert("", "end", values=txt, tags=self.myFont)
+
+    def generateSpecificBarrerMatrixTree(self):
+        # todo need to add the eqmt label to the tree
+        self.specbar_matrix_tree_columns = ["eqmt"]
+        for rcvr in self.parent.func_vars.receiver_list:
+            self.specbar_matrix_tree_columns.append(str(rcvr.r_name))
+        self.specbar_matrix_tree_rows = []
+        for eqmt, dir_list in zip(
+            self.parent.func_vars.equipment_list, self.parent.func_vars.specific_bar_matrix
+        ):
+            self.specbar_matrix_tree_rows.append([eqmt.eqmt_tag] + dir_list.copy())
+        self.maxWidths = []
+
+        # create widths
+        for item in self.specbar_matrix_tree_columns:
+            self.maxWidths.append(self.myFont.measure(str(item)))
+
+        # getting max widths
+        for col_idx in range(len(self.specbar_matrix_tree_rows[0])):
+            maxWidth = self.maxWidths[col_idx]
+            for row in self.specbar_matrix_tree_rows:
+                currentWidth = self.myFont.measure(str(row[col_idx]))
+                if currentWidth > maxWidth:
+                    maxWidth = currentWidth
+            self.maxWidths[col_idx] = maxWidth
+
+        # initializing dir tree
+        self.specific_bar_matrix_tree = tkinter.ttk.Treeview(
+            self, columns=self.specbar_matrix_tree_columns, show="headings"
+        )
+
+        # adding columns and rows
+        for i, col in enumerate(self.specbar_matrix_tree_columns):
+            self.specific_bar_matrix_tree.heading(col, text=col)
+            if i == 0:
+                self.specific_bar_matrix_tree.column( col, minwidth=25, width=maxWidth + 85, stretch=0)
+            else:
+                self.specific_bar_matrix_tree.column( col, minwidth=25, width=maxWidth + 5, stretch=0)
+
+        for i, row in enumerate(self.specbar_matrix_tree_rows):
+            txt = [x if x is not None else "_" for x in row]
+            self.specific_bar_matrix_tree.insert("", "end", values=txt, tags=self.myFont)
 
     def ARI_interpolation(self, pld, lowerIL, upperIL, lowerPLD, upperPLD):
         diff_in_reduction = (pld - lowerPLD) / (upperPLD - lowerPLD)
@@ -2344,11 +2427,10 @@ class Pane_Eqmt_Info(tkinter.Frame):
                         attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
                         used_barrier_name = None
                         barrier_IL = 0
-                        if (
-                            TAKE_ARI_BARRIER == True
-                            and TAKE_OB_FRESNAL_BARRIER == False
-                        ):
+                        if ( TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False):
                             for bar in self.parent.func_vars.barrier_list:
+                                if self.parent.func_vars.use_specific_bar_bool.get() is True and bar.barrier_name != self.parent.func_vars.specific_bar_matrix[eqmt_index][rcvr_index]:
+                                    continue
                                 barrier_info_list = self.ARI_barrier_IL_calc(
                                     eqmt.x_coord,
                                     eqmt.y_coord,
@@ -2404,6 +2486,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
                             TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True
                         ):
                             for bar in self.parent.func_vars.barrier_list:
+                                if self.parent.func_vars.use_specific_bar_bool.get() is True and bar.barrier_name != self.parent.func_vars.specific_bar_matrix[eqmt_index][rcvr_index]:
+                                    continue
                                 if None not in [
                                     eqmt.hz63,
                                     eqmt.hz125,
