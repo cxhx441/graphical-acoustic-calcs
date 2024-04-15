@@ -159,7 +159,6 @@ class FuncVars(object):
                 continue
             if count.value == None:
                 break
-            print(z_coord.value)
             self.equipment_list.append(
                 Equipment(
                     count.value,
@@ -252,9 +251,7 @@ class FuncVars(object):
                     ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
                 )
             self.ignore_matrix.append(ignore_rcvrs_list)
-        # print("ignorematrix")
-        # print(self.ignore_matrix)
-        # print(len(self.ignore_matrix))
+
 
         # initialize master_scale
         self.old_master_scale = 1.0
@@ -620,8 +617,6 @@ class Editor(tkinter.Frame):
             self.x0, self.y0, self.curX, self.curY, fill="blue", width=5
         )
         scale_line_coords = self.canvas.coords(self.scale_line)
-        # self.parent.func_vars.scale_line_distance_px = CraigsFunFunctions.distance_formula(scale_line_coords[0], scale_line_coords[2], scale_line_coords[1], scale_line_coords[3])
-        # self.parent.func_vars.known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
         _scale_line_distance_px = utils.distance_formula(
             scale_line_coords[0],
             scale_line_coords[2],
@@ -632,8 +627,6 @@ class Editor(tkinter.Frame):
         self.parent.func_vars.update_master_scale(
             _scale_line_distance_px, _known_distance_ft
         )
-        # self.parent.func_vars.old_master_scale = self.parent.func_vars.master_scale
-        # self.parent.func_vars.master_scale = self.parent.func_vars.known_distance_ft / self.parent.func_vars.scale_line_distance_px
 
         scaleIndicatorLabelText = (
             "Scale: "
@@ -660,12 +653,9 @@ class Editor(tkinter.Frame):
         self.get_current_mouse_pos(event)
         self.canvas.delete(self.temp_rect)
 
-        # random_8bit_color = CraigsFunFunctions.random_8bit_color()
         green_hex_color = utils.rgb_to_hex((0, 254, 0))
 
-        eqmt_tag = self.parent.pane_eqmt_info.current_equipment[
-            1
-        ]  # i think this is grabbing from the tree
+        eqmt_tag = self.parent.pane_eqmt_info.current_equipment[1]
         tagged_objects = self.canvas.find_withtag(eqmt_tag)
         for tagged_object in tagged_objects:
             self.canvas.delete(tagged_object)
@@ -696,8 +686,6 @@ class Editor(tkinter.Frame):
                 obj.y_coord *= self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
-                # print(obj.x_coord)
-                # print(obj.y_coord)
 
         self.parent.pane_eqmt_info.focused_tree_children = (
             self.parent.pane_eqmt_info.equipment_tree.get_children()
@@ -746,7 +734,6 @@ class Editor(tkinter.Frame):
         self.get_current_mouse_pos(event)
         self.canvas.delete(self.temp_rect)
 
-        # random_8bit_color = CraigsFunFunctions.random_8bit_color()
         red_hex_color = utils.rgb_to_hex((254, 0, 0))
 
         r_name = self.parent.pane_eqmt_info.current_receiver[0]
@@ -1100,52 +1087,6 @@ class Editor(tkinter.Frame):
             self.current_text_coords[0] + x_shifter,
             self.current_text_coords[1] + y_shifter,
         )
-
-        # for obj in self.parent.func_vars.equipment_list:
-        #     if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
-        #         obj.x_coord = (
-        #             self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.y_coord = (
-        #             self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.x_coord = round(obj.x_coord, 2)
-        #         obj.y_coord = round(obj.y_coord, 2)
-
-        # for obj in self.parent.func_vars.receiver_list:
-        #     if obj.r_name == self.tag_rcvr_or_barr_num:
-        #         obj.x_coord = (
-        #             self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.y_coord = (
-        #             self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.x_coord = round(obj.x_coord, 2)
-        #         obj.y_coord = round(obj.y_coord, 2)
-
-        # for obj in self.parent.func_vars.barrier_list:
-        #     if obj.barrier_name == self.tag_rcvr_or_barr_num:
-        #         obj.x0_coord = (
-        #             self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.y0_coord = (
-        #             self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.x1_coord = (
-        #             self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.y1_coord = (
-        #             self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
-        #         )
-        #         obj.x0_coord = round(obj.x0_coord, 2)
-        #         obj.y0_coord = round(obj.y0_coord, 2)
-        #         obj.x1_coord = round(obj.x1_coord, 2)
-        #         obj.y1_coord = round(obj.y1_coord, 2)
-
-        # self.parent.pane_eqmt_info.update_est_noise_levels()
-        # self.parent.pane_eqmt_info.generateEqmtTree()
-        # self.parent.pane_eqmt_info.generateRcvrTree()
-        # self.parent.pane_eqmt_info.generateBarrierTree()
 
     def shift_click_release(self, event):
         self.get_current_mouse_pos(event)
@@ -2528,7 +2469,6 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 sound_pressure += 10 ** (spl / 10)
                 # print(f"eqmt, x: {eqmt.x_coord}, y: {eqmt.y_coord}, z: {eqmt.z_coord}, lwa: {round(sound_power,0)}, IL: {round(eqmt.insertion_loss,0)}, distance: {round(distance,1)}, attenuation: {round(attenuation,1)}")
             rcvr.predicted_sound_level = round(10 * math.log10(sound_pressure), 1)
-            # if rcvr.r_name == "R1":
             #     print(f"predicted sound level: {rcvr.predicted_sound_level}")
             # print(f"distance: {distance}")
             for listy in self.barrierListForExcelOutput:
@@ -2605,11 +2545,9 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     break
                 if not self.barrierListForExcelOutput[barCalcListNum]:
                     row[col].value = 0
-                    print(0)
                 else:
                     row[col].value = self.barrierListForExcelOutput[barCalcListNum][0]
                     print(self.barrierListForExcelOutput[barCalcListNum][0])
-
                 barCalcListNum += 1
 
         # saving scale
