@@ -1618,6 +1618,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.generateRcvrTree()
         self.generateBarrierTree()
         self.generateIgnoreMatrixTree()
+        self.generateDirectivityMatrixTree()
 
         self.equipment_tree.bind("<Double-1>", self.open_item_editor_window)
         self.receiver_tree.bind("<Double-1>", self.open_item_editor_window)
@@ -1942,6 +1943,48 @@ class Pane_Eqmt_Info(tkinter.Frame):
         for i, row in enumerate(self.ignore_matrix_tree_rows):
             txt = [x if x != None else "_" for x in row]
             self.ignore_matrix_tree.insert("", "end", values=txt, tags=self.myFont)
+
+    def generateDirectivityMatrixTree(self):
+        # todo need to add the eqmt label to the tree
+        self.dir_matrix_tree_columns = ["eqmt"]
+        for rcvr in self.parent.func_vars.receiver_list:
+            self.dir_matrix_tree_columns.append(str(rcvr.r_name))
+        self.dir_matrix_tree_rows = []
+        for eqmt, dir_list in zip(
+            self.parent.func_vars.equipment_list, self.parent.func_vars.directivity_matrix
+        ):
+            self.dir_matrix_tree_rows.append([eqmt.eqmt_tag] + dir_list.copy())
+        self.maxWidths = []
+
+        # create widths
+        for item in self.dir_matrix_tree_columns:
+            self.maxWidths.append(self.myFont.measure(str(item)))
+
+        # getting max widths
+        for col_idx in range(len(self.dir_matrix_tree_rows[0])):
+            maxWidth = self.maxWidths[col_idx]
+            for row in self.dir_matrix_tree_rows:
+                currentWidth = self.myFont.measure(str(row[col_idx]))
+                if currentWidth > maxWidth:
+                    maxWidth = currentWidth
+            self.maxWidths[col_idx] = maxWidth
+
+        # initializing dir tree
+        self.directivity_matrix_tree = tkinter.ttk.Treeview(
+            self, columns=self.dir_matrix_tree_columns, show="headings"
+        )
+
+        # adding columns and rows
+        for i, col in enumerate(self.dir_matrix_tree_columns):
+            self.directivity_matrix_tree.heading(col, text=col)
+            if i == 0:
+                self.directivity_matrix_tree.column( col, minwidth=25, width=maxWidth + 85, stretch=0)
+            else:
+                self.directivity_matrix_tree.column( col, minwidth=25, width=maxWidth + 5, stretch=0)
+
+        for i, row in enumerate(self.dir_matrix_tree_rows):
+            txt = [x if x != 0 else "_" for x in row]
+            self.directivity_matrix_tree.insert("", "end", values=txt, tags=self.myFont)
 
     def ARI_interpolation(self, pld, lowerIL, upperIL, lowerPLD, upperPLD):
         diff_in_reduction = (pld - lowerPLD) / (upperPLD - lowerPLD)
