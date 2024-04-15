@@ -252,6 +252,18 @@ class FuncVars(object):
                 )
             self.ignore_matrix.append(ignore_rcvrs_list)
 
+        # initialize directivity matrix
+        c = DIRECTIVITY_MATRIX_COL # 1-index based
+        r = DIRECTIVITY_MATRIX_ROW
+        self.directivity_matrix = list()
+        for eqmt_row in range(len(self.equipment_list)):
+            directivity_rcvrs_list = list()
+            for rcvr_col in range(len(self.receiver_list)):
+                directivity = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
+                if directivity is None:
+                    directivity = 0
+                directivity_rcvrs_list.append(directivity)
+            self.directivity_matrix.append(directivity_rcvrs_list)
 
         # initialize master_scale
         self.old_master_scale = 1.0
@@ -2280,6 +2292,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                         + (rcvr.z_coord - eqmt.z_coord) ** 2
                     )
                     try:
+                        directivity_loss = self.parent.func_vars.directivity_matrix[eqmt_index][rcvr_index]
                         q = eqmt.installed_q
                         r = distance * 0.308
                         attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
@@ -2448,7 +2461,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                         barrierListForExcelOutput_curData = []
                         # print(eqmt.eqmt_tag, " - ", barrier_IL, int(barrier_IL), int(round(barrier_IL, 0)))
                         spl = (
-                            sound_power - eqmt.insertion_loss - attenuation - barrier_IL
+                            sound_power - eqmt.insertion_loss - attenuation - barrier_IL - directivity_loss
                         )
                         # if barriermethod == ' - OB_fresnel':
                         print(
