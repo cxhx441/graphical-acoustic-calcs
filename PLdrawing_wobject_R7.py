@@ -287,14 +287,12 @@ class FuncVars(object):
 
         # initialize master_scale
         self.old_master_scale = 1.0
-        self.known_distance_ft = (
-            KNOWN_DISTANCE_FT_CELL.value if KNOWN_DISTANCE_FT_CELL.value != None else 1.0
-        )
-        self.scale_line_distance_px = (
-            SCALE_LINE_DISTANCE_PX_CELL.value
-            if SCALE_LINE_DISTANCE_PX_CELL.value != None
-            else 1.0
-        )
+        self.known_distance_ft = 1
+        if KNOWN_DISTANCE_FT_CELL.value is not None:
+            self.known_distance_ft = KNOWN_DISTANCE_FT_CELL.value
+        self.scale_line_distance_px = 1
+        if SCALE_LINE_DISTANCE_PX_CELL.value is not None:
+            self.scale_line_distance_px = SCALE_LINE_DISTANCE_PX_CELL.value
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
         self.quickdraw_bool = tk.IntVar()
         self.use_specific_bar_bool = tk.BooleanVar()
@@ -379,28 +377,24 @@ class Equipment(object):
 
 
 class Receiver(object):
-    def __init__(
-        self, r_name, x_coord, y_coord, z_coord, sound_limit, predicted_sound_level
-    ):
-        self.r_name = r_name.replace(" ", "-")
-        self.x_coord = x_coord if x_coord != None else 0
-        self.y_coord = y_coord if y_coord != None else 0
-        self.z_coord = z_coord if z_coord != None else 0
-        self.sound_limit = sound_limit
+    def __init__( self, r_name, x_coord, y_coord, z_coord, sound_limit, predicted_sound_level):
+        self.r_name                = r_name.replace(" ", "-")
+        self.x_coord               = x_coord if x_coord != None else 0
+        self.y_coord               = y_coord if y_coord != None else 0
+        self.z_coord               = z_coord if z_coord != None else 0
+        self.sound_limit           = sound_limit
         self.predicted_sound_level = predicted_sound_level
 
 
 class Barrier(object):
-    def __init__(
-        self, barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord
-    ):
+    def __init__( self, barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord):
         self.barrier_name = barrier_name.replace(" ", "-")
-        self.x0_coord = x0_coord if x0_coord != None else 0
-        self.y0_coord = y0_coord if y0_coord != None else 0
-        self.z0_coord = z0_coord if z0_coord != None else 0
-        self.x1_coord = x1_coord if x1_coord != None else 0
-        self.y1_coord = y1_coord if y1_coord != None else 0
-        self.z1_coord = z1_coord if z1_coord != None else 0
+        self.x0_coord     = x0_coord if x0_coord != None else 0
+        self.y0_coord     = y0_coord if y0_coord != None else 0
+        self.z0_coord     = z0_coord if z0_coord != None else 0
+        self.x1_coord     = x1_coord if x1_coord != None else 0
+        self.y1_coord     = y1_coord if y1_coord != None else 0
+        self.z1_coord     = z1_coord if z1_coord != None else 0
 
 
 class Editor(tk.Frame):
@@ -409,52 +403,45 @@ class Editor(tk.Frame):
         self.parent = parent
 
         # open image
-        self.image = Image.open(BED_IMAGE_FILEPATH)
+        self.image  = Image.open(BED_IMAGE_FILEPATH)
         self.image2 = Image.open(TOP_IMAGE_FILEPATH)
 
         # image sizing
         self.imageWidth, self.imageHeight = self.image.size
         print(self.image.size)
-        self.image_size_factor = 1.5
-        self.imageWidth *= self.image_size_factor
-        self.imageHeight *= self.image_size_factor
-        self.imageWidth = int(self.imageWidth)
-        self.imageHeight = int(self.imageHeight)
-        self.image = self.image.resize(
+        self.image_size_factor  = 1.5
+        self.imageWidth        *= self.image_size_factor
+        self.imageHeight       *= self.image_size_factor
+        self.imageWidth         = int(self.imageWidth)
+        self.imageHeight        = int(self.imageHeight)
+        self.image              = self.image.resize(
             (self.imageWidth, self.imageHeight), Image.LANCZOS
         )
-        self.image2_new_width = int(self.image2.size[0] / 2)
+        self.image2_new_width  = int(self.image2.size[0] / 2)
         self.image2_new_height = int(self.image2.size[1] / 2)
-        self.image2 = self.image2.resize(
-            (self.image2_new_width, self.image2_new_height), Image.LANCZOS
+        self.image2            = self.image2.resize( (self.image2_new_width, self.image2_new_height), Image.LANCZOS
         )
-        self.tk_image = ImageTk.PhotoImage(self.image)
+        self.tk_image  = ImageTk.PhotoImage(self.image)
         self.tk_image2 = ImageTk.PhotoImage(self.image2)
-        # self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(100))
 
         # canvas sizing
-        self.screen_width = self.winfo_screenwidth()
-        self.screen_height = self.winfo_screenheight()
-        self.canvas_size_factor = 1
-        self.canvasWidth = self.screen_width * self.canvas_size_factor
-        self.canvasHeight = self.screen_height * self.canvas_size_factor
-        self.canvasWidth -= 2000  # otherwise window is off the screen on home pc
-        self.canvasHeight -= 250  # otherwise window is off the screen on home pc
-        self.canvas = tk.Canvas(
-            self, width=self.canvasWidth, height=self.canvasHeight, cursor="cross"
+        self.screen_width        = self.winfo_screenwidth()
+        self.screen_height       = self.winfo_screenheight()
+        self.canvas_size_factor  = 1
+        self.canvasWidth         = self.screen_width * self.canvas_size_factor
+        self.canvasHeight        = self.screen_height * self.canvas_size_factor
+        self.canvasWidth        -= 2000  # otherwise window is off the screen on home pc
+        self.canvasHeight       -= 250  # otherwise window is off the screen on home pc
+        self.canvas              = tk.Canvas(
+            self, width=self.canvasWidth, height=self.canvasHeight, cursor = "cross"
         )
 
-        self.canvas.config(
-            scrollregion=(0, 0, self.imageWidth, self.imageHeight)
-        )  # giving scrollbars
-        self.canvas.create_image(
-            0, 0, anchor="nw", image=self.tk_image, tag="bed_layer"
-        )
+        # giving scrollbars
+        self.canvas.config(scrollregion=(0, 0, self.imageWidth, self.imageHeight))
+        self.canvas.create_image(0, 0, anchor="nw", image=self.tk_image, tag="bed_layer")
         image2_x_coord = self.image2.size[0] / 2
         image2_y_coord = self.image2.size[1] / 2
-        self.canvas.create_image(
-            image2_x_coord, image2_y_coord, tag="eqmt_drawing", image=self.tk_image2
-        )
+        self.canvas.create_image(image2_x_coord, image2_y_coord, tag="eqmt_drawing", image=self.tk_image2)
 
         """scroll bar setup"""
         self.vScrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
@@ -464,20 +451,18 @@ class Editor(tk.Frame):
         self.canvas.config(yscrollcommand=self.vScrollbar.set)
         self.canvas.config(xscrollcommand=self.hScrollbar.set)
 
-        self.canvas.grid(
-            row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W
-        )
-        self.vScrollbar.grid(row=0, column=1, stick=tk.N + tk.S)
-        self.hScrollbar.grid(row=1, column=0, sticky=tk.E + tk.W)
+        self.canvas.grid(       row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.vScrollbar.grid(   row=0, column=1, stick=tk.N + tk.S)
+        self.hScrollbar.grid(   row=1, column=0, sticky=tk.E + tk.W)
         """scroll bar setup"""
 
         self.initialize_eqmt_rcvr_barrier_drawings()
 
-        self.temp_rect = None
-        self.temp_line = None
-        self.scale_line = None
+        self.temp_rect    = None
+        self.temp_line    = None
+        self.scale_line   = None
         self.measure_line = None
-        self.angle = 0
+        self.angle        = 0
 
         self.canvas.bind("<Shift-ButtonPress-1>", self.shift_click)
         self.canvas.bind("<Shift-B1-Motion>", self.shift_click_move)
@@ -495,7 +480,6 @@ class Editor(tk.Frame):
             offset = 20
             x = eqmt.x_coord / self.parent.func_vars.master_scale
             y = eqmt.y_coord / self.parent.func_vars.master_scale
-            # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
             self.rectPerm = self.canvas.create_rectangle(
                 x - offset,
                 y - offset,
@@ -519,7 +503,6 @@ class Editor(tk.Frame):
             offset = 20
             x = rcvr.x_coord / self.parent.func_vars.master_scale
             y = rcvr.y_coord / self.parent.func_vars.master_scale
-            # self.canvas.coords(self.temp_rect, self.x0-10, self.y0-10, self.curX+10, self.curY+10)
             self.rectPerm = self.canvas.create_rectangle(
                 x - offset,
                 y - offset,
@@ -578,25 +561,13 @@ class Editor(tk.Frame):
         return angle
 
     def update_distance_label(self):
-        self.parent.pane_eqmt_info.measurement_label.configure(
-            text="Measurement: "
-            + str(
-                round(
-                    self.parent.func_vars.master_scale
-                    * (
-                        math.sqrt(
-                            (self.x0 - self.curX) ** 2 + (self.y0 - self.curY) ** 2
-                        )
-                    ),
-                    2,
-                )
-            )
-            + " ft"
-        )
+        dist = math.sqrt((self.x0 - self.curX) ** 2 + (self.y0 - self.curY) ** 2)
+        dist = round(self.parent.func_vars.master_scale * dist, 2,)
+        self.parent.pane_eqmt_info.measurement_label.configure(text="Measurement: " + str(dist) + " ft")
 
     def get_current_n_start_mouse_pos(self, event):
-        self.x0 = self.canvas.canvasx(event.x)
-        self.y0 = self.canvas.canvasy(event.y)
+        self.x0   = self.canvas.canvasx(event.x)
+        self.y0   = self.canvas.canvasy(event.y)
         self.curX = self.canvas.canvasx(event.x)
         self.curY = self.canvas.canvasy(event.y)
 
@@ -668,9 +639,7 @@ class Editor(tk.Frame):
             + str(self.parent.func_vars.known_distance_ft)
             + " ft"
         )
-        self.parent.pane_eqmt_info.scaleIndicatorLabel.configure(
-            text=scaleIndicatorLabelText
-        )
+        self.parent.pane_eqmt_info.scaleIndicatorLabel.configure( text=scaleIndicatorLabelText)
 
     def drawing_eqmt_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
@@ -1140,40 +1109,24 @@ class Editor(tk.Frame):
 
         for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
-                obj.x_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
+                obj.x_coord = self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+                obj.y_coord = self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
         for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == self.tag_rcvr_or_barr_num:
-                obj.x_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
+                obj.x_coord = self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+                obj.y_coord = self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
         for obj in self.parent.func_vars.barrier_list:
             if obj.barrier_name == self.tag_rcvr_or_barr_num:
-                obj.x0_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y0_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x1_coord = (
-                    self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y1_coord = (
-                    self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
-                )
+                obj.x0_coord = self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+                obj.y0_coord = self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+                obj.x1_coord = self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
+                obj.y1_coord = self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
                 obj.x0_coord = round(obj.x0_coord, 2)
                 obj.y0_coord = round(obj.y0_coord, 2)
                 obj.x1_coord = round(obj.x1_coord, 2)
@@ -1272,9 +1225,7 @@ class Pane_Toolbox(tk.Frame):
 
     def export_bar_file(self):
         with open("bar_export_list.csv", mode="w", newline="") as csvfile:
-            csv_writer = csv.writer(
-                csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
-            )
+            csv_writer = csv.writer(csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for barrier_item in self.parent.pane_eqmt_info.barrierListForExcelOutput:
                 print(barrier_item)
                 csv_writer.writerow(barrier_item)
@@ -1283,15 +1234,9 @@ class Pane_Toolbox(tk.Frame):
         )
 
     def draw_grid(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.drawing_grid_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.drawing_grid_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_grid_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_grid_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease)
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Drawing Grid")
         self.parent.pane_eqmt_info.e1.delete(0, "end")
@@ -1485,15 +1430,9 @@ class Pane_Toolbox(tk.Frame):
             )
 
     def set_scale(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Setting Scale")
         self.parent.pane_eqmt_info.e1.delete(0, "end")
@@ -1501,98 +1440,49 @@ class Pane_Toolbox(tk.Frame):
         self.parent.pane_eqmt_info.e1.focus()
 
     def draw_equipment(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease)
 
-        self.parent.pane_eqmt_info.status_label.configure(
-            text="Status: Drawing Equipment"
-        )
+        self.parent.pane_eqmt_info.status_label.configure( text="Status: Drawing Equipment")
 
     def draw_receiver(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease
-        )
-        self.parent.pane_eqmt_info.status_label.configure(
-            text="Status: Drawing Receiver"
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease)
+        self.parent.pane_eqmt_info.status_label.configure( text="Status: Drawing Receiver")
 
     def draw_barrier(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.drawing_barrier_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.drawing_barrier_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>", self.parent.editor.drawing_barrier_leftMouseRelease
-        )
-        self.parent.pane_eqmt_info.status_label.configure(
-            text="Status: Drawing Barrier"
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_barrier_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_barrier_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_barrier_leftMouseRelease)
+        self.parent.pane_eqmt_info.status_label.configure( text="Status: Drawing Barrier")
 
     def measure(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.measureing_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.measureing_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease)
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Measuring")
 
     def rotate_eqmt_drawing(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.rotating_eqmt_drawing_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.rotating_eqmt_drawing_leftMouseMove
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.rotating_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.rotating_eqmt_drawing_leftMouseMove)
         self.parent.editor.canvas.unbind("<ButtonRelease-1>")
-        self.parent.pane_eqmt_info.status_label.configure(
-            text="Status: Rotating Equipment Drawing"
-        )
+        self.parent.pane_eqmt_info.status_label.configure( text="Status: Rotating Equipment Drawing")
 
     def move_eqmt_drawing(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.moving_eqmt_drawing_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.moving_eqmt_drawing_leftMouseMove
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.moving_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.moving_eqmt_drawing_leftMouseMove)
         self.parent.editor.canvas.unbind("<ButtonRelease-1>")
         self.parent.pane_eqmt_info.status_label.configure(
             text="Status: Moving Equipment Drawing"
         )
 
     def resize_eqmt_drawing(self):
-        self.parent.editor.canvas.bind(
-            "<ButtonPress-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseClick
-        )
-        self.parent.editor.canvas.bind(
-            "<B1-Motion>", self.parent.editor.resizing_eqmt_drawing_leftMouseMove
-        )
-        self.parent.editor.canvas.bind(
-            "<ButtonRelease-1>",
-            self.parent.editor.resizing_eqmt_drawing_leftMouseRelease,
-        )
-        self.parent.pane_eqmt_info.status_label.configure(
-            text="Status: Resizing Equipment Drawing"
-        )
+        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseClick)
+        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.resizing_eqmt_drawing_leftMouseMove)
+        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseRelease,)
+        self.parent.pane_eqmt_info.status_label.configure( text="Status: Resizing Equipment Drawing")
 
 
 class Pane_Eqmt_Info(tk.Frame):
@@ -1629,18 +1519,10 @@ class Pane_Eqmt_Info(tk.Frame):
             relief="solid",
             font=(None, 15),
         )
-        self.status_label = tk.Label(
-            self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15)
-        )
-        self.measurement_label = tk.Label(
-            self, text="Measurement: ", borderwidth=2, relief="solid", font=(None, 15)
-        )
-        self.equipment_list_label = tk.Label(
-            self, text="Equipment", font=(None, 15)
-        )
-        self.receiver_list_label = tk.Label(
-            self, text="Receivers", font=(None, 15)
-        )
+        self.status_label = tk.Label( self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15))
+        self.measurement_label = tk.Label( self, text="Measurement: ", borderwidth=2, relief="solid", font=(None, 15))
+        self.equipment_list_label = tk.Label( self, text="Equipment", font=(None, 15))
+        self.receiver_list_label = tk.Label( self, text="Receivers", font=(None, 15))
         self.barrier_list_label = tk.Label(self, text="Barriers", font=(None, 15))
         self.generateEqmtTree()
         self.generateRcvrTree()
@@ -1654,32 +1536,20 @@ class Pane_Eqmt_Info(tk.Frame):
         self.barrier_tree.bind("<Double-1>", self.open_item_editor_window)
         self.deselect_item_from_trees()
 
-        self.entryBox1.grid(row=0, column=0, sticky=tk.N + tk.W)
-        self.exportList_button.grid(row=1, column=0, sticky=tk.N + tk.W)
-        self.scaleIndicatorLabel.grid(row=2, column=0, sticky=tk.N + tk.W)
-        self.status_label.grid(row=3, column=0, sticky=tk.N + tk.W)
-        self.measurement_label.grid(row=4, column=0, sticky=tk.N + tk.W)
-        self.equipment_list_label.grid(
-            row=5, column=0, columnspan=3, pady=10, sticky=tk.N + tk.W
-        )
-        self.equipment_tree.grid(row=6, column=0, sticky=tk.N + tk.W)
-        self.receiver_list_label.grid(
-            row=7, column=0, pady=10, sticky=tk.N + tk.W
-        )
-        self.receiver_tree.grid(row=8, column=0, sticky=tk.N + tk.W)
-        self.barrier_list_label.grid(
-            row=9, column=0, pady=10, sticky=tk.N + tk.W
-        )
-        self.barrier_tree.grid(row=10, column=0, sticky=tk.N + tk.W)
-        self.ignore_matrix_tree.grid(
-            row=8, column=1, padx=0, sticky=tk.N + tk.W
-        )
-        self.directivity_matrix_tree.grid(
-            row=10, column=1, padx=0, sticky=tk.N + tk.W
-        )
-        self.specific_bar_matrix_tree.grid(
-            row=10, column=3, padx=0, sticky=tk.N + tk.W
-        )
+        self.entryBox1.grid(                row=0, column=0, sticky=tk.N + tk.W)
+        self.exportList_button.grid(        row=1, column=0, sticky=tk.N + tk.W)
+        self.scaleIndicatorLabel.grid(      row=2, column=0, sticky=tk.N + tk.W)
+        self.status_label.grid(             row=3, column=0, sticky=tk.N + tk.W)
+        self.measurement_label.grid(        row=4, column=0, sticky=tk.N + tk.W)
+        self.equipment_list_label.grid(     row=5, column=0, columnspan=3, pady=10, sticky=tk.N + tk.W)
+        self.equipment_tree.grid(           row=6, column=0, sticky=tk.N + tk.W)
+        self.receiver_list_label.grid(      row=7, column=0, pady=10, sticky=tk.N + tk.W)
+        self.receiver_tree.grid(            row=8, column=0, sticky=tk.N + tk.W)
+        self.barrier_list_label.grid(       row=9, column=0, pady=10, sticky=tk.N + tk.W)
+        self.barrier_tree.grid(             row=10, column=0, sticky=tk.N + tk.W)
+        self.ignore_matrix_tree.grid(       row=8, column=1, padx=0, sticky=tk.N + tk.W)
+        self.directivity_matrix_tree.grid(  row=10, column=1, padx=0, sticky=tk.N + tk.W)
+        self.specific_bar_matrix_tree.grid( row=10, column=3, padx=0, sticky=tk.N + tk.W)
 
     def generateEqmtTree(self):
         try:  # delete tree if already exists
@@ -1707,7 +1577,7 @@ class Pane_Eqmt_Info(tk.Frame):
             for i, value in enumerate(self.equipment_tree_rows):
                 self.equipment_tree.insert("", "end", values=value, tags=self.myFont)
 
-        except:
+        except AttributeError:
             self.equipment_tree_columns = [
                 "count",
                 "tag",
@@ -1807,7 +1677,7 @@ class Pane_Eqmt_Info(tk.Frame):
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value, tags=self.myFont)
 
-        except:
+        except AttributeError:
             self.receiver_tree_columns = [
                 "R#",
                 "x",
@@ -1879,7 +1749,7 @@ class Pane_Eqmt_Info(tk.Frame):
             for i, value in enumerate(self.barrier_tree_rows):
                 self.barrier_tree.insert("", "end", values=value, tags=self.myFont)
 
-        except:
+        except AttributeError:
             self.barrier_tree_columns = [
                 "barrier_name",
                 "x0",
