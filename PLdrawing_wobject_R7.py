@@ -2377,6 +2377,22 @@ class Pane_Eqmt_Info(tkinter.Frame):
             "OB-Fresnel",
         ]
 
+    def spec_bar_check(self, b, e_idx, r_idx):
+        bar_mat_cur_line = self.parent.func_vars.specific_bar_matrix[e_idx][r_idx]
+        if bar_mat_cur_line is None:
+            return False
+        bar_mat_cur_line = [x.strip() for x in bar_mat_cur_line.split(",")]
+        # SAFETY NET: check that all spec'd bars are actually listed
+        real_bars = set([x.barrier_name for x in self.parent.func_vars.barrier_list])
+        all_bars = set(bar_mat_cur_line) | real_bars
+        if len(all_bars) != len(self.parent.func_vars.barrier_list):
+            e = self.parent.func_vars.equipment_list[e_idx].eqmt_tag
+            r = self.parent.func_vars.receiver_list[r_idx].r_name
+            raise NameError(f'this spec\'d bar doesn\'t exist: {all_bars - real_bars} shown for {e}, {r}')
+        if b.barrier_name not in bar_mat_cur_line:
+            return False
+        return True
+
     def update_est_noise_levels(self):
         barrierListForExcelOutput_curData = []
         self.barrierListForExcelOutput = [
@@ -2429,7 +2445,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
                         barrier_IL = 0
                         if ( TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False):
                             for bar in self.parent.func_vars.barrier_list:
-                                if self.parent.func_vars.use_specific_bar_bool.get() is True and bar.barrier_name != self.parent.func_vars.specific_bar_matrix[eqmt_index][rcvr_index]:
+                                if self.parent.func_vars.use_specific_bar_bool.get() is True \
+                                    and self.spec_bar_check(bar, eqmt_index, rcvr_index) is False:
                                     continue
                                 barrier_info_list = self.ARI_barrier_IL_calc(
                                     eqmt.x_coord,
@@ -2486,7 +2503,8 @@ class Pane_Eqmt_Info(tkinter.Frame):
                             TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True
                         ):
                             for bar in self.parent.func_vars.barrier_list:
-                                if self.parent.func_vars.use_specific_bar_bool.get() is True and bar.barrier_name != self.parent.func_vars.specific_bar_matrix[eqmt_index][rcvr_index]:
+                                if self.parent.func_vars.use_specific_bar_bool.get() is True \
+                                    and self.spec_bar_check(bar, eqmt_index, rcvr_index) is False:
                                     continue
                                 if None not in [
                                     eqmt.hz63,
