@@ -73,8 +73,8 @@ BAR_Y1_COORD = ws["AE"]
 BAR_Z1_COORD = ws["AF"]
 
 # SCALING
-KNOWN_DISTANCE_FT = ws["AE20"]
-SCALE_LINE_DISTANCE_PX = ws["AF20"]
+KNOWN_DISTANCE_FT_CELL = ws["AE20"]
+SCALE_LINE_DISTANCE_PX_CELL = ws["AF20"]
 
 # SPECIFIC BAR BOOL
 USE_SPECIFIC_BAR_BOOL_CELL = ws["AC19"]
@@ -286,11 +286,11 @@ class FuncVars(object):
         # initialize master_scale
         self.old_master_scale = 1.0
         self.known_distance_ft = (
-            KNOWN_DISTANCE_FT.value if KNOWN_DISTANCE_FT.value != None else 1.0
+            KNOWN_DISTANCE_FT_CELL.value if KNOWN_DISTANCE_FT_CELL.value != None else 1.0
         )
         self.scale_line_distance_px = (
-            SCALE_LINE_DISTANCE_PX.value
-            if SCALE_LINE_DISTANCE_PX.value != None
+            SCALE_LINE_DISTANCE_PX_CELL.value
+            if SCALE_LINE_DISTANCE_PX_CELL.value != None
             else 1.0
         )
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
@@ -2712,8 +2712,16 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 barCalcListNum += 1
 
         # saving scale
+        """ using the cell reference doesn't work...."""
+        #KNOWN_DISTANCE_FT_CELL.value = self.parent.func_vars.known_distance_ft
+        #CALE_LINE_DISTANCE_PX_CELL.value = self.parent.func_vars.scale_line_distance_px
         ws["AE20"] = self.parent.func_vars.known_distance_ft
         ws["AF20"] = self.parent.func_vars.scale_line_distance_px
+
+        # save spec bar bool
+        """ using the cell reference doesn't work...."""
+        #USE_SPECIFIC_BAR_BOOL_CELL.value = self.parent.func_vars.use_specific_bar_bool.get()
+        ws["AC19"] = self.parent.func_vars.use_specific_bar_bool.get()
 
         print("saving")
         wb.save(filename=XL_FILEPATH_SAVE)
