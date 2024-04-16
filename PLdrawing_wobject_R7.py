@@ -14,47 +14,42 @@ import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
 TOP_IMAGE_FILEPATH = "top_image.png"
-XL_FILEPATH = "Aegis San Rafael - PL - 2020.08.17.xlsm"
-XL_TEMP_FILEPATH = "_temp.xlsm"
-XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
-DRAWING_FONT = "Helvetica 15 bold"
+XL_FILEPATH        = "Aegis San Rafael - PL - 2020.08.17.xlsm"
+XL_TEMP_FILEPATH   = "_temp.xlsm"
+XL_FILEPATH_SAVE   = XL_FILEPATH[0:-5] + " - exported.xlsm"
+DRAWING_FONT       = "Helvetica 15 bold"
 
-TAKE_ARI_BARRIER = True
+TAKE_ARI_BARRIER        = True
 TAKE_OB_FRESNAL_BARRIER = False
 
-# if TAKE_ARI_BARRIER == True and TAKE_OB_BARRIER == True:
-#     print("ERROR CANNOT HAVE BOTH BARRIER CALCULATION METHODS SET TO TRUE")
-
 # setting columns
-# EQMT
-# open workbook
 shutil.copyfile(XL_FILEPATH, XL_TEMP_FILEPATH)
-wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
-ws = wb["Input LwA_XYZ"]
-EQMT_COUNT = ws["A"]
-EQMT_TAG = ws["B"]
-PATH = ws["C"]
-MAKE = ws["D"]
-MODEL = ws["E"]
-HZ63 = ws["F"]
-HZ125 = ws["G"]
-HZ250 = ws["H"]
-HZ500 = ws["I"]
-HZ1000 = ws["J"]
-HZ2000 = ws["K"]
-HZ4000 = ws["L"]
-HZ8000 = ws["M"]
-SOUND_LEVEL = ws["N"]
-SOUND_REF_DIST = ws["O"]
-TESTED_Q = ws["P"]
-INSTALLED_Q = ws["R"]
+wb                  = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
+ws                  = wb["Input LwA_XYZ"]
+EQMT_COUNT          = ws["A"]
+EQMT_TAG            = ws["B"]
+PATH                = ws["C"]
+MAKE                = ws["D"]
+MODEL               = ws["E"]
+HZ63                = ws["F"]
+HZ125               = ws["G"]
+HZ250               = ws["H"]
+HZ500               = ws["I"]
+HZ1000              = ws["J"]
+HZ2000              = ws["K"]
+HZ4000              = ws["L"]
+HZ8000              = ws["M"]
+SOUND_LEVEL         = ws["N"]
+SOUND_REF_DIST      = ws["O"]
+TESTED_Q            = ws["P"]
+INSTALLED_Q         = ws["R"]
 EQMT_INSERTION_LOSS = ws["S"]
-EQMT_X_COORD = ws["T"]
-EQMT_Y_COORD = ws["U"]
-EQMT_Z_COORD = ws["V"]
+EQMT_X_COORD        = ws["T"]
+EQMT_Y_COORD        = ws["U"]
+EQMT_Z_COORD        = ws["V"]
 
 # RCVRS
-R_NAME = ws["Z"]
+R_NAME      = ws["Z"]
 REC_X_COORD = ws["AA"]
 REC_Y_COORD = ws["AB"]
 REC_Z_COORD = ws["AC"]
@@ -70,7 +65,7 @@ BAR_Y1_COORD = ws["AE"]
 BAR_Z1_COORD = ws["AF"]
 
 # SCALING
-KNOWN_DISTANCE_FT_CELL = ws["AE20"]
+KNOWN_DISTANCE_FT_CELL      = ws["AE20"]
 SCALE_LINE_DISTANCE_PX_CELL = ws["AF20"]
 
 # SPECIFIC BAR BOOL
@@ -78,36 +73,34 @@ USE_SPECIFIC_BAR_BOOL_CELL = ws["AC19"]
 if type(USE_SPECIFIC_BAR_BOOL_CELL.value) is not bool:
     raise TypeError("cell must be TRUE or FALSE")
 
-# IGNORE MATRIX
+# ROW/COLs for MATRICES
 IGNORE_MATRIX_COL       = 108 # 1-index based
 IGNORE_MATRIX_ROW       = 2   # 1-index based
-# DIRECTIVITY MATRIX
 DIRECTIVITY_MATRIX_COL  = 125 # 1-index based
 DIRECTIVITY_MATRIX_ROW  = 2   # 1-index based
-# SPECIFIC BAR MATRIX
 SPECIFIC_BAR_MATRIX_COL = 91  # 1-index based
 SPECIFIC_BAR_MATRIX_ROW = 2   # 1-index based
 
 
 # ROW/COL VALUES FOR Export List Button
-EQMT_NAME_COL       = 1
-EQMT_X_COORD_COL    = 19
-EQMT_Y_COORD_COL    = 20
+EQMT_NAME_COL    = 1
+EQMT_X_COORD_COL = 19
+EQMT_Y_COORD_COL = 20
 
-RCVR_NAME_COL       = 25
-RCVR_X_COORD_COL    = 26
-RCVR_Y_COORD_COL    = 27
+RCVR_NAME_COL    = 25
+RCVR_X_COORD_COL = 26
+RCVR_Y_COORD_COL = 27
 
-BAR_NAME_COL        = 25
-BAR_START_ROW       = 24 # 1-index based
-BAR_X0_COORD_COL    = 26
-BAR_Y0_COORD_COL    = 27
-BAR_Z0_COORD_COL    = 28
-BAR_X1_COORD_COL    = 29
-BAR_Y1_COORD_COL    = 30
-BAR_Z1_COORD_COL    = 31
+BAR_NAME_COL     = 25
+BAR_START_ROW    = 24 # 1-index based
+BAR_X0_COORD_COL = 26
+BAR_Y0_COORD_COL = 27
+BAR_Z0_COORD_COL = 28
+BAR_X1_COORD_COL = 29
+BAR_Y1_COORD_COL = 30
+BAR_Z1_COORD_COL = 31
 
-BAR_IL_COL_RANGE    = range(73, 88)
+BAR_IL_COL_RANGE = range(73, 88)
 
 class FuncVars(object):
     def __init__(self, parent):
@@ -195,10 +188,8 @@ class FuncVars(object):
         for r_name, x_coord, y_coord, z_coord, sound_limit in zip(
             R_NAME, REC_X_COORD, REC_Y_COORD, REC_Z_COORD, SOUND_LIMIT
         ):
-            if r_name.value == "R#":
-                continue
-            if r_name.value == None:
-                break
+            if r_name.value == "R#": continue
+            if r_name.value == None: break
             self.receiver_list.append(
                 Receiver(
                     str(r_name.value),
@@ -229,10 +220,8 @@ class FuncVars(object):
             BAR_Y1_COORD,
             BAR_Z1_COORD,
         ):
-            if int(barrier_name.coordinate[1:]) < 24:
-                continue
-            if barrier_name.value == None:
-                break
+            if int(barrier_name.coordinate[1:]) < 24: continue
+            if barrier_name.value == None           : break
             self.barrier_list.append(
                 Barrier(
                     str(barrier_name.value),
