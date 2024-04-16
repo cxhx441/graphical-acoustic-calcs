@@ -2717,12 +2717,12 @@ class Pane_Eqmt_Info(tk.Frame):
         print("saved")
         # wb.close()
 
-    def e1_unfocus(self, event):
+    def entryBox1_unfocus(self, event):
         self.status_label.focus()
 
-    def e1_select_all(self, event):
-        e1_text = self.e1.get()
-        self.e1.selection_range(0, len(e1_text))
+    def entryBox1_select_all(self, event):
+        text = self.entryBox1.get()
+        self.entryBox1.selection_range(0, len(text))
 
     def save_changes(self):
         offset = 20
