@@ -1,15 +1,12 @@
-import tkinter
+import tkinter as tk
 from tkinter import ttk
-from PIL import ImageTk, Image
-import openpyxl
 import math
-import random
 import sys
+import openpyxl
 import shutil
-
-# sys.path.append('C:/Users/craig/Dropbox/00 - Cloud Documents/06 - Code/01 - Python Scripts')
-import utils
+from PIL import ImageTk, Image
 import numpy
+import utils
 import tkinter.font
 import acoustics
 import csv
@@ -294,8 +291,8 @@ class FuncVars(object):
             else 1.0
         )
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
-        self.quickdraw_bool = tkinter.IntVar()
-        self.use_specific_bar_bool = tkinter.BooleanVar()
+        self.quickdraw_bool = tk.IntVar()
+        self.use_specific_bar_bool = tk.BooleanVar()
         if USE_SPECIFIC_BAR_BOOL_CELL.value is True:
             self.use_specific_bar_bool.set(True)
         elif USE_SPECIFIC_BAR_BOOL_CELL.value is False:
@@ -404,9 +401,9 @@ class Barrier(object):
         self.z1_coord = z1_coord if z1_coord != None else 0
 
 
-class Editor(tkinter.Frame):
+class Editor(tk.Frame):
     def __init__(self, parent):
-        tkinter.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent)
         self.parent = parent
 
         # open image
@@ -441,7 +438,7 @@ class Editor(tkinter.Frame):
         self.canvasHeight = self.screen_height * self.canvas_size_factor
         self.canvasWidth -= 2000  # otherwise window is off the screen on home pc
         self.canvasHeight -= 250  # otherwise window is off the screen on home pc
-        self.canvas = tkinter.Canvas(
+        self.canvas = tk.Canvas(
             self, width=self.canvasWidth, height=self.canvasHeight, cursor="cross"
         )
 
@@ -458,18 +455,18 @@ class Editor(tkinter.Frame):
         )
 
         """scroll bar setup"""
-        self.vScrollbar = tkinter.Scrollbar(self, orient=tkinter.VERTICAL)
-        self.hScrollbar = tkinter.Scrollbar(self, orient=tkinter.HORIZONTAL)
+        self.vScrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
+        self.hScrollbar = tk.Scrollbar(self, orient=tk.HORIZONTAL)
         self.vScrollbar.config(command=self.canvas.yview)
         self.hScrollbar.config(command=self.canvas.xview)
         self.canvas.config(yscrollcommand=self.vScrollbar.set)
         self.canvas.config(xscrollcommand=self.hScrollbar.set)
 
         self.canvas.grid(
-            row=0, column=0, sticky=tkinter.N + tkinter.S + tkinter.E + tkinter.W
+            row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W
         )
-        self.vScrollbar.grid(row=0, column=1, stick=tkinter.N + tkinter.S)
-        self.hScrollbar.grid(row=1, column=0, sticky=tkinter.E + tkinter.W)
+        self.vScrollbar.grid(row=0, column=1, stick=tk.N + tk.S)
+        self.hScrollbar.grid(row=1, column=0, sticky=tk.E + tk.W)
         """scroll bar setup"""
 
         self.initialize_eqmt_rcvr_barrier_drawings()
@@ -492,7 +489,6 @@ class Editor(tkinter.Frame):
         """initialize receivers and equipment boxes and barriers"""
         fontsize = 10
         for eqmt in self.parent.func_vars.equipment_list:
-            # random_8bit_color = CraigsFunFunctions.random_8bit_color()
             green_hex_color = utils.rgb_to_hex((0, 254, 0))
             offset = 20
             x = eqmt.x_coord / self.parent.func_vars.master_scale
@@ -517,7 +513,6 @@ class Editor(tkinter.Frame):
             )
 
         for rcvr in self.parent.func_vars.receiver_list:
-            # random_8bit_color = CraigsFunFunctions.random_8bit_color()
             red_hex_color = utils.rgb_to_hex((254, 0, 0))
             offset = 20
             x = rcvr.x_coord / self.parent.func_vars.master_scale
@@ -1188,27 +1183,27 @@ class Editor(tkinter.Frame):
         self.parent.pane_eqmt_info.generateBarrierTree()
 
 
-class Pane_Toolbox(tkinter.Frame):
+class Pane_Toolbox(tk.Frame):
     def __init__(self, parent):
-        tkinter.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent)
         self.parent = parent
 
-        self.button_set_image_scale = tkinter.Button(
+        self.button_set_image_scale = tk.Button(
             self, text="Set Image Scale", command=self.set_scale, font=(None, 15)
         )
-        self.button_measure = tkinter.Button(
+        self.button_measure = tk.Button(
             self, text="Measure", command=self.measure, font=(None, 15)
         )
-        self.button_draw_equipment = tkinter.Button(
+        self.button_draw_equipment = tk.Button(
             self, text="Draw Equipment", command=self.draw_equipment, font=(None, 15)
         )
-        self.button_draw_receiver = tkinter.Button(
+        self.button_draw_receiver = tk.Button(
             self, text="Draw Receiver", command=self.draw_receiver, font=(None, 15)
         )
-        self.button_draw_barrier = tkinter.Button(
+        self.button_draw_barrier = tk.Button(
             self, text="Draw Barrier", command=self.draw_barrier, font=(None, 15)
         )
-        self.checkbox_quickdraw = tkinter.Checkbutton(
+        self.checkbox_quickdraw = tk.Checkbutton(
             self,
             text="Quickdraw",
             variable=self.parent.func_vars.quickdraw_bool,
@@ -1216,7 +1211,7 @@ class Pane_Toolbox(tkinter.Frame):
             offvalue=0,
             font=(None, 15),
         )
-        self.checkbox_specific_barrier = tkinter.Checkbutton(
+        self.checkbox_specific_barrier = tk.Checkbutton(
             self,
             text="Specific Barrier",
             variable=self.parent.func_vars.use_specific_bar_bool,
@@ -1225,56 +1220,50 @@ class Pane_Toolbox(tkinter.Frame):
             command=self.update_est_noise_levels,
             font=(None, 15),
         )
-        self.button_rotate_eqmt_drawing = tkinter.Button(
+        self.button_rotate_eqmt_drawing = tk.Button(
             self,
             text="Eqmt Drawing - Rotate",
             command=self.rotate_eqmt_drawing,
             font=(None, 15),
         )
-        self.button_move_eqmt_drawing = tkinter.Button(
+        self.button_move_eqmt_drawing = tk.Button(
             self,
             text="Eqmt Drawing - Move",
             command=self.move_eqmt_drawing,
             font=(None, 15),
         )
-        self.button_resize_eqmt_drawing = tkinter.Button(
+        self.button_resize_eqmt_drawing = tk.Button(
             self,
             text="Eqmt Drawing - Resize",
             command=self.resize_eqmt_drawing,
             font=(None, 15),
         )
-        self.button_draw_grid = tkinter.Button(
+        self.button_draw_grid = tk.Button(
             self, text="Draw Grid", command=self.draw_grid, font=(None, 15)
         )
-        self.button_update_grid = tkinter.Button(
+        self.button_update_grid = tk.Button(
             self, text="Update Grid", command=self.update_grid, font=(None, 15)
         )
-        self.button_export_bar_file = tkinter.Button(
+        self.button_export_bar_file = tk.Button(
             self,
             text="Export Bar to File",
             command=self.export_bar_file,
             font=(None, 15),
         )
 
-        self.button_set_image_scale.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_measure.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-        self.button_draw_equipment.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
-        self.button_draw_receiver.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
-        self.button_draw_barrier.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
-        self.checkbox_quickdraw.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
-        self.checkbox_specific_barrier.grid(row=4, column=1, sticky=tkinter.N + tkinter.W)
-        self.button_rotate_eqmt_drawing.grid(
-            row=0, column=2, sticky=tkinter.N + tkinter.W
-        )
-        self.button_move_eqmt_drawing.grid(
-            row=1, column=2, sticky=tkinter.N + tkinter.W
-        )
-        self.button_resize_eqmt_drawing.grid(
-            row=2, column=2, sticky=tkinter.N + tkinter.W
-        )
-        self.button_draw_grid.grid(row=0, column=3, sticky=tkinter.N + tkinter.W)
-        self.button_update_grid.grid(row=1, column=3, sticky=tkinter.N + tkinter.W)
-        self.button_export_bar_file.grid(row=2, column=3, sticky=tkinter.N + tkinter.W)
+        self.button_set_image_scale.grid(       row=0, column=0, sticky=tk.N + tk.W)
+        self.button_measure.grid(               row=1, column=0, sticky=tk.N + tk.W)
+        self.button_draw_equipment.grid(        row=0, column=1, sticky=tk.N + tk.W)
+        self.button_draw_receiver.grid(         row=1, column=1, sticky=tk.N + tk.W)
+        self.button_draw_barrier.grid(          row=2, column=1, sticky=tk.N + tk.W)
+        self.checkbox_quickdraw.grid(           row=3, column=1, sticky=tk.N + tk.W)
+        self.checkbox_specific_barrier.grid(    row=4, column=1, sticky=tk.N + tk.W)
+        self.button_rotate_eqmt_drawing.grid(   row=0, column=2, sticky=tk.N + tk.W)
+        self.button_move_eqmt_drawing.grid(     row=1, column=2, sticky=tk.N + tk.W)
+        self.button_resize_eqmt_drawing.grid(   row=2, column=2, sticky=tk.N + tk.W)
+        self.button_draw_grid.grid(             row=0, column=3, sticky=tk.N + tk.W)
+        self.button_update_grid.grid(           row=1, column=3, sticky=tk.N + tk.W)
+        self.button_export_bar_file.grid(       row=2, column=3, sticky=tk.N + tk.W)
 
     def update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
@@ -1604,18 +1593,18 @@ class Pane_Toolbox(tkinter.Frame):
         )
 
 
-class Pane_Eqmt_Info(tkinter.Frame):
+class Pane_Eqmt_Info(tk.Frame):
     def __init__(self, parent):
-        tkinter.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent)
         self.parent = parent
         self.update_est_noise_levels()
 
-        self.myFont = tkinter.font.nametofont("TkTextFont")
+        self.myFont = tk.font.nametofont("TkTextFont")
 
-        self.e1 = tkinter.Entry(self, font=(None, 15), width=36)
-        self.e1.insert(0, "input scale & eqmt_tag names here prior to setting")
-        self.e1.bind("<FocusIn>", self.e1_select_all)
-        self.e1.bind("<Return>", self.e1_unfocus)
+        self.entryBox1 = tk.Entry(self, font=(None, 15), width=36)
+        self.entryBox1.insert(0, "input scale & eqmt_tag names here prior to setting")
+        self.entryBox1.bind("<FocusIn>", self.entryBox1_select_all)
+        self.entryBox1.bind("<Return>", self.entryBox1_unfocus)
 
         scaleIndicatorLabelText = (
             "Scale: "
@@ -1625,32 +1614,32 @@ class Pane_Eqmt_Info(tkinter.Frame):
             + " ft"
         )
 
-        self.exportList_button = tkinter.Button(
+        self.exportList_button = tk.Button(
             self,
             text="Export Tag List",
             command=self.onExportListButton,
             font=(None, 15),
         )
-        self.scaleIndicatorLabel = tkinter.Label(
+        self.scaleIndicatorLabel = tk.Label(
             self,
             text=scaleIndicatorLabelText,
             borderwidth=2,
             relief="solid",
             font=(None, 15),
         )
-        self.status_label = tkinter.Label(
+        self.status_label = tk.Label(
             self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15)
         )
-        self.measurement_label = tkinter.Label(
+        self.measurement_label = tk.Label(
             self, text="Measurement: ", borderwidth=2, relief="solid", font=(None, 15)
         )
-        self.equipment_list_label = tkinter.Label(
+        self.equipment_list_label = tk.Label(
             self, text="Equipment", font=(None, 15)
         )
-        self.receiver_list_label = tkinter.Label(
+        self.receiver_list_label = tk.Label(
             self, text="Receivers", font=(None, 15)
         )
-        self.barrier_list_label = tkinter.Label(self, text="Barriers", font=(None, 15))
+        self.barrier_list_label = tk.Label(self, text="Barriers", font=(None, 15))
         self.generateEqmtTree()
         self.generateRcvrTree()
         self.generateBarrierTree()
@@ -1663,31 +1652,31 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.barrier_tree.bind("<Double-1>", self.open_item_editor_window)
         self.deselect_item_from_trees()
 
-        self.e1.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-        self.exportList_button.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-        self.scaleIndicatorLabel.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-        self.status_label.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
-        self.measurement_label.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
+        self.entryBox1.grid(row=0, column=0, sticky=tk.N + tk.W)
+        self.exportList_button.grid(row=1, column=0, sticky=tk.N + tk.W)
+        self.scaleIndicatorLabel.grid(row=2, column=0, sticky=tk.N + tk.W)
+        self.status_label.grid(row=3, column=0, sticky=tk.N + tk.W)
+        self.measurement_label.grid(row=4, column=0, sticky=tk.N + tk.W)
         self.equipment_list_label.grid(
-            row=5, column=0, pady=10, sticky=tkinter.N + tkinter.W
+            row=5, column=0, columnspan=3, pady=10, sticky=tk.N + tk.W
         )
-        self.equipment_tree.grid(row=6, column=0, sticky=tkinter.N + tkinter.W)
+        self.equipment_tree.grid(row=6, column=0, sticky=tk.N + tk.W)
         self.receiver_list_label.grid(
-            row=7, column=0, pady=10, sticky=tkinter.N + tkinter.W
+            row=7, column=0, pady=10, sticky=tk.N + tk.W
         )
-        self.receiver_tree.grid(row=8, column=0, sticky=tkinter.N + tkinter.W)
+        self.receiver_tree.grid(row=8, column=0, sticky=tk.N + tk.W)
         self.barrier_list_label.grid(
-            row=9, column=0, pady=10, sticky=tkinter.N + tkinter.W
+            row=9, column=0, pady=10, sticky=tk.N + tk.W
         )
-        self.barrier_tree.grid(row=10, column=0, sticky=tkinter.N + tkinter.W)
+        self.barrier_tree.grid(row=10, column=0, sticky=tk.N + tk.W)
         self.ignore_matrix_tree.grid(
-            row=8, column=0, padx=400, sticky=tkinter.N + tkinter.W
+            row=8, column=1, padx=0, sticky=tk.N + tk.W
         )
         self.directivity_matrix_tree.grid(
-            row=10, column=0, padx=500, sticky=tkinter.N + tkinter.W
+            row=10, column=1, padx=0, sticky=tk.N + tk.W
         )
         self.specific_bar_matrix_tree.grid(
-            row=10, column=0, padx=800, sticky=tkinter.N + tkinter.W
+            row=10, column=3, padx=0, sticky=tk.N + tk.W
         )
 
     def generateEqmtTree(self):
@@ -1774,7 +1763,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.maxWidths[col_idx] = maxWidth
 
             # initialize tree
-            self.equipment_tree = tkinter.ttk.Treeview(
+            self.equipment_tree = tk.ttk.Treeview(
                 self, columns=self.equipment_tree_columns, show="headings"
             )
 
@@ -1856,7 +1845,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.maxWidths[col_idx] = maxWidth
 
             # initializing receiver tree
-            self.receiver_tree = tkinter.ttk.Treeview(
+            self.receiver_tree = tk.ttk.Treeview(
                 self, columns=self.receiver_tree_columns, show="headings"
             )
 
@@ -1929,7 +1918,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
                 self.maxWidths[col_idx] = maxWidth
 
             # initializing barrier tree
-            self.barrier_tree = tkinter.ttk.Treeview(
+            self.barrier_tree = tk.ttk.Treeview(
                 self, columns=self.barrier_tree_columns, show="headings"
             )
 
@@ -1972,7 +1961,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.maxWidths[col_idx] = maxWidth
 
         # initializing barrier tree
-        self.ignore_matrix_tree = tkinter.ttk.Treeview(
+        self.ignore_matrix_tree = tk.ttk.Treeview(
             self, columns=self.ignore_matrix_tree_columns, show="headings"
         )
 
@@ -2014,7 +2003,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.maxWidths[col_idx] = maxWidth
 
         # initializing dir tree
-        self.directivity_matrix_tree = tkinter.ttk.Treeview(
+        self.directivity_matrix_tree = tk.ttk.Treeview(
             self, columns=self.dir_matrix_tree_columns, show="headings"
         )
 
@@ -2056,7 +2045,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.maxWidths[col_idx] = maxWidth
 
         # initializing dir tree
-        self.specific_bar_matrix_tree = tkinter.ttk.Treeview(
+        self.specific_bar_matrix_tree = tk.ttk.Treeview(
             self, columns=self.specbar_matrix_tree_columns, show="headings"
         )
 
@@ -2838,7 +2827,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         self.newWindow.destroy()
 
     def open_item_editor_window(self, event):
-        self.newWindow = tkinter.Toplevel()
+        self.newWindow = tk.Toplevel()
         self.newWindow.title("item editor")
         self.newWindow.geometry("500x500")
 
@@ -2849,113 +2838,113 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     self.current_obj = obj
                     break
 
-            self.count_label = tkinter.Label(
+            self.count_label = tk.Label(
                 self.newWindow, text="count", borderwidth=2, font=(None, 15)
             )
-            self.eqmt_tag_label = tkinter.Label(
+            self.eqmt_tag_label = tk.Label(
                 self.newWindow, text="eqmt_tag", borderwidth=2, font=(None, 15)
             )
-            self.path_label = tkinter.Label(
+            self.path_label = tk.Label(
                 self.newWindow, text="path", borderwidth=2, font=(None, 15)
             )
-            self.make_label = tkinter.Label(
+            self.make_label = tk.Label(
                 self.newWindow, text="make", borderwidth=2, font=(None, 15)
             )
-            self.model_label = tkinter.Label(
+            self.model_label = tk.Label(
                 self.newWindow, text="model", borderwidth=2, font=(None, 15)
             )
-            self.sound_level_label = tkinter.Label(
+            self.sound_level_label = tk.Label(
                 self.newWindow, text="sound_level", borderwidth=2, font=(None, 15)
             )
-            self.sound_ref_dist_label = tkinter.Label(
+            self.sound_ref_dist_label = tk.Label(
                 self.newWindow, text="sound_ref_dist", borderwidth=2, font=(None, 15)
             )
-            self.tested_q_label = tkinter.Label(
+            self.tested_q_label = tk.Label(
                 self.newWindow, text="tested_q", borderwidth=2, font=(None, 15)
             )
-            self.installed_q_label = tkinter.Label(
+            self.installed_q_label = tk.Label(
                 self.newWindow, text="installed_q", borderwidth=2, font=(None, 15)
             )
-            self.insertion_loss_label = tkinter.Label(
+            self.insertion_loss_label = tk.Label(
                 self.newWindow, text="insertion_loss", borderwidth=2, font=(None, 15)
             )
-            self.x_coord_label = tkinter.Label(
+            self.x_coord_label = tk.Label(
                 self.newWindow, text="x_coord", borderwidth=2, font=(None, 15)
             )
-            self.y_coord_label = tkinter.Label(
+            self.y_coord_label = tk.Label(
                 self.newWindow, text="y_coord", borderwidth=2, font=(None, 15)
             )
-            self.z_coord_label = tkinter.Label(
+            self.z_coord_label = tk.Label(
                 self.newWindow, text="z_coord", borderwidth=2, font=(None, 15)
             )
 
-            self.count_input = tkinter.Entry(self.newWindow, font=(None, 15), width=24)
-            self.eqmt_tag_input = tkinter.Entry(
+            self.count_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.eqmt_tag_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.path_input = tkinter.Entry(self.newWindow, font=(None, 15), width=24)
-            self.make_input = tkinter.Entry(self.newWindow, font=(None, 15), width=24)
-            self.model_input = tkinter.Entry(self.newWindow, font=(None, 15), width=24)
-            self.sound_level_input = tkinter.Entry(
+            self.path_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.make_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.model_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.sound_level_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.sound_ref_dist_input = tkinter.Entry(
+            self.sound_ref_dist_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.tested_q_input = tkinter.Entry(
+            self.tested_q_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.installed_q_input = tkinter.Entry(
+            self.installed_q_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.insertion_loss_input = tkinter.Entry(
+            self.insertion_loss_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.x_coord_input = tkinter.Entry(
+            self.x_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.y_coord_input = tkinter.Entry(
+            self.y_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.z_coord_input = tkinter.Entry(
+            self.z_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
 
-            self.count_label.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-            self.eqmt_tag_label.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-            self.path_label.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-            self.make_label.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
-            self.model_label.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
-            self.sound_level_label.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
+            self.count_label.grid(row=0, column=0, sticky=tk.N + tk.W)
+            self.eqmt_tag_label.grid(row=1, column=0, sticky=tk.N + tk.W)
+            self.path_label.grid(row=2, column=0, sticky=tk.N + tk.W)
+            self.make_label.grid(row=3, column=0, sticky=tk.N + tk.W)
+            self.model_label.grid(row=4, column=0, sticky=tk.N + tk.W)
+            self.sound_level_label.grid(row=5, column=0, sticky=tk.N + tk.W)
             self.sound_ref_dist_label.grid(
-                row=6, column=0, sticky=tkinter.N + tkinter.W
+                row=6, column=0, sticky=tk.N + tk.W
             )
-            self.tested_q_label.grid(row=7, column=0, sticky=tkinter.N + tkinter.W)
-            self.installed_q_label.grid(row=8, column=0, sticky=tkinter.N + tkinter.W)
+            self.tested_q_label.grid(row=7, column=0, sticky=tk.N + tk.W)
+            self.installed_q_label.grid(row=8, column=0, sticky=tk.N + tk.W)
             self.insertion_loss_label.grid(
-                row=9, column=0, sticky=tkinter.N + tkinter.W
+                row=9, column=0, sticky=tk.N + tk.W
             )
-            self.x_coord_label.grid(row=10, column=0, sticky=tkinter.N + tkinter.W)
-            self.y_coord_label.grid(row=11, column=0, sticky=tkinter.N + tkinter.W)
-            self.z_coord_label.grid(row=12, column=0, sticky=tkinter.N + tkinter.W)
+            self.x_coord_label.grid(row=10, column=0, sticky=tk.N + tk.W)
+            self.y_coord_label.grid(row=11, column=0, sticky=tk.N + tk.W)
+            self.z_coord_label.grid(row=12, column=0, sticky=tk.N + tk.W)
 
-            self.count_input.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
-            self.eqmt_tag_input.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
-            self.path_input.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
-            self.make_input.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
-            self.model_input.grid(row=4, column=1, sticky=tkinter.N + tkinter.W)
-            self.sound_level_input.grid(row=5, column=1, sticky=tkinter.N + tkinter.W)
+            self.count_input.grid(row=0, column=1, sticky=tk.N + tk.W)
+            self.eqmt_tag_input.grid(row=1, column=1, sticky=tk.N + tk.W)
+            self.path_input.grid(row=2, column=1, sticky=tk.N + tk.W)
+            self.make_input.grid(row=3, column=1, sticky=tk.N + tk.W)
+            self.model_input.grid(row=4, column=1, sticky=tk.N + tk.W)
+            self.sound_level_input.grid(row=5, column=1, sticky=tk.N + tk.W)
             self.sound_ref_dist_input.grid(
-                row=6, column=1, sticky=tkinter.N + tkinter.W
+                row=6, column=1, sticky=tk.N + tk.W
             )
-            self.tested_q_input.grid(row=7, column=1, sticky=tkinter.N + tkinter.W)
-            self.installed_q_input.grid(row=8, column=1, sticky=tkinter.N + tkinter.W)
+            self.tested_q_input.grid(row=7, column=1, sticky=tk.N + tk.W)
+            self.installed_q_input.grid(row=8, column=1, sticky=tk.N + tk.W)
             self.insertion_loss_input.grid(
-                row=9, column=1, sticky=tkinter.N + tkinter.W
+                row=9, column=1, sticky=tk.N + tk.W
             )
-            self.x_coord_input.grid(row=10, column=1, sticky=tkinter.N + tkinter.W)
-            self.y_coord_input.grid(row=11, column=1, sticky=tkinter.N + tkinter.W)
-            self.z_coord_input.grid(row=12, column=1, sticky=tkinter.N + tkinter.W)
+            self.x_coord_input.grid(row=10, column=1, sticky=tk.N + tk.W)
+            self.y_coord_input.grid(row=11, column=1, sticky=tk.N + tk.W)
+            self.z_coord_input.grid(row=12, column=1, sticky=tk.N + tk.W)
 
             self.count_input.insert(0, self.current_obj.count)
             self.eqmt_tag_input.insert(0, self.current_obj.eqmt_tag)
@@ -2978,47 +2967,47 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     self.current_obj = obj
                     break
 
-            self.r_name_label = tkinter.Label(
+            self.r_name_label = tk.Label(
                 self.newWindow, text="r_name", borderwidth=2, font=(None, 15)
             )
-            self.x_coord_label = tkinter.Label(
+            self.x_coord_label = tk.Label(
                 self.newWindow, text="x_coord", borderwidth=2, font=(None, 15)
             )
-            self.y_coord_label = tkinter.Label(
+            self.y_coord_label = tk.Label(
                 self.newWindow, text="y_coord", borderwidth=2, font=(None, 15)
             )
-            self.z_coord_label = tkinter.Label(
+            self.z_coord_label = tk.Label(
                 self.newWindow, text="z_coord", borderwidth=2, font=(None, 15)
             )
-            self.sound_limit_label = tkinter.Label(
+            self.sound_limit_label = tk.Label(
                 self.newWindow, text="sound_limit", borderwidth=2, font=(None, 15)
             )
 
-            self.r_name_input = tkinter.Entry(self.newWindow, font=(None, 15), width=24)
-            self.x_coord_input = tkinter.Entry(
+            self.r_name_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.x_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.y_coord_input = tkinter.Entry(
+            self.y_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.z_coord_input = tkinter.Entry(
+            self.z_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.sound_limit_input = tkinter.Entry(
+            self.sound_limit_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
 
-            self.r_name_label.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-            self.x_coord_label.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-            self.y_coord_label.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-            self.z_coord_label.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
-            self.sound_limit_label.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
+            self.r_name_label.grid(row=0, column=0, sticky=tk.N + tk.W)
+            self.x_coord_label.grid(row=1, column=0, sticky=tk.N + tk.W)
+            self.y_coord_label.grid(row=2, column=0, sticky=tk.N + tk.W)
+            self.z_coord_label.grid(row=3, column=0, sticky=tk.N + tk.W)
+            self.sound_limit_label.grid(row=4, column=0, sticky=tk.N + tk.W)
 
-            self.r_name_input.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
-            self.x_coord_input.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
-            self.y_coord_input.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
-            self.z_coord_input.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
-            self.sound_limit_input.grid(row=4, column=1, sticky=tkinter.N + tkinter.W)
+            self.r_name_input.grid(row=0, column=1, sticky=tk.N + tk.W)
+            self.x_coord_input.grid(row=1, column=1, sticky=tk.N + tk.W)
+            self.y_coord_input.grid(row=2, column=1, sticky=tk.N + tk.W)
+            self.z_coord_input.grid(row=3, column=1, sticky=tk.N + tk.W)
+            self.sound_limit_input.grid(row=4, column=1, sticky=tk.N + tk.W)
 
             self.r_name_input.insert(0, self.current_obj.r_name)
             self.x_coord_input.insert(0, self.current_obj.x_coord)
@@ -3033,65 +3022,65 @@ class Pane_Eqmt_Info(tkinter.Frame):
                     self.current_obj = obj
                     break
 
-            self.barrier_name_label = tkinter.Label(
+            self.barrier_name_label = tk.Label(
                 self.newWindow, text="barrier_name", borderwidth=2, font=(None, 15)
             )
-            self.x0_coord_label = tkinter.Label(
+            self.x0_coord_label = tk.Label(
                 self.newWindow, text="x0_coord", borderwidth=2, font=(None, 15)
             )
-            self.y0_coord_label = tkinter.Label(
+            self.y0_coord_label = tk.Label(
                 self.newWindow, text="y0_coord", borderwidth=2, font=(None, 15)
             )
-            self.z0_coord_label = tkinter.Label(
+            self.z0_coord_label = tk.Label(
                 self.newWindow, text="z0_coord", borderwidth=2, font=(None, 15)
             )
-            self.x1_coord_label = tkinter.Label(
+            self.x1_coord_label = tk.Label(
                 self.newWindow, text="x1_coord", borderwidth=2, font=(None, 15)
             )
-            self.y1_coord_label = tkinter.Label(
+            self.y1_coord_label = tk.Label(
                 self.newWindow, text="y1_coord", borderwidth=2, font=(None, 15)
             )
-            self.z1_coord_label = tkinter.Label(
+            self.z1_coord_label = tk.Label(
                 self.newWindow, text="z1_coord", borderwidth=2, font=(None, 15)
             )
 
-            self.barrier_name_input = tkinter.Entry(
+            self.barrier_name_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.x0_coord_input = tkinter.Entry(
+            self.x0_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.y0_coord_input = tkinter.Entry(
+            self.y0_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.z0_coord_input = tkinter.Entry(
+            self.z0_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.x1_coord_input = tkinter.Entry(
+            self.x1_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.y1_coord_input = tkinter.Entry(
+            self.y1_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.z1_coord_input = tkinter.Entry(
+            self.z1_coord_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
 
-            self.barrier_name_label.grid(row=0, column=0, sticky=tkinter.N + tkinter.W)
-            self.x0_coord_label.grid(row=1, column=0, sticky=tkinter.N + tkinter.W)
-            self.y0_coord_label.grid(row=2, column=0, sticky=tkinter.N + tkinter.W)
-            self.z0_coord_label.grid(row=3, column=0, sticky=tkinter.N + tkinter.W)
-            self.x1_coord_label.grid(row=4, column=0, sticky=tkinter.N + tkinter.W)
-            self.y1_coord_label.grid(row=5, column=0, sticky=tkinter.N + tkinter.W)
-            self.z1_coord_label.grid(row=6, column=0, sticky=tkinter.N + tkinter.W)
+            self.barrier_name_label.grid(row=0, column=0, sticky=tk.N + tk.W)
+            self.x0_coord_label.grid(row=1, column=0, sticky=tk.N + tk.W)
+            self.y0_coord_label.grid(row=2, column=0, sticky=tk.N + tk.W)
+            self.z0_coord_label.grid(row=3, column=0, sticky=tk.N + tk.W)
+            self.x1_coord_label.grid(row=4, column=0, sticky=tk.N + tk.W)
+            self.y1_coord_label.grid(row=5, column=0, sticky=tk.N + tk.W)
+            self.z1_coord_label.grid(row=6, column=0, sticky=tk.N + tk.W)
 
-            self.barrier_name_input.grid(row=0, column=1, sticky=tkinter.N + tkinter.W)
-            self.x0_coord_input.grid(row=1, column=1, sticky=tkinter.N + tkinter.W)
-            self.y0_coord_input.grid(row=2, column=1, sticky=tkinter.N + tkinter.W)
-            self.z0_coord_input.grid(row=3, column=1, sticky=tkinter.N + tkinter.W)
-            self.x1_coord_input.grid(row=4, column=1, sticky=tkinter.N + tkinter.W)
-            self.y1_coord_input.grid(row=5, column=1, sticky=tkinter.N + tkinter.W)
-            self.z1_coord_input.grid(row=6, column=1, sticky=tkinter.N + tkinter.W)
+            self.barrier_name_input.grid(row=0, column=1, sticky=tk.N + tk.W)
+            self.x0_coord_input.grid(row=1, column=1, sticky=tk.N + tk.W)
+            self.y0_coord_input.grid(row=2, column=1, sticky=tk.N + tk.W)
+            self.z0_coord_input.grid(row=3, column=1, sticky=tk.N + tk.W)
+            self.x1_coord_input.grid(row=4, column=1, sticky=tk.N + tk.W)
+            self.y1_coord_input.grid(row=5, column=1, sticky=tk.N + tk.W)
+            self.z1_coord_input.grid(row=6, column=1, sticky=tk.N + tk.W)
 
             self.barrier_name_input.insert(0, self.current_obj.barrier_name)
             self.x0_coord_input.insert(0, self.current_obj.x0_coord)
@@ -3101,18 +3090,18 @@ class Pane_Eqmt_Info(tkinter.Frame):
             self.y1_coord_input.insert(0, self.current_obj.y1_coord)
             self.z1_coord_input.insert(0, self.current_obj.z1_coord)
 
-        self.save_changes_button = tkinter.Button(
+        self.save_changes_button = tk.Button(
             self.newWindow,
             text="Save Changes",
             command=self.save_changes,
             font=(None, 15),
         )
-        self.save_changes_button.grid(row=15, column=1, columnspan=2, sticky=tkinter.N)
+        self.save_changes_button.grid(row=15, column=1, columnspan=2, sticky=tk.N)
 
 
-class Main_Application(tkinter.Frame):
+class Main_Application(tk.Frame):
     def __init__(self, parent):
-        tkinter.Frame.__init__(self)  # , parent
+        tk.Frame.__init__(self)  # , parent
         self.parent = parent
 
         self.func_vars = FuncVars(self)
@@ -3120,15 +3109,15 @@ class Main_Application(tkinter.Frame):
         self.pane_toolbox = Pane_Toolbox(self)
         self.pane_eqmt_info = Pane_Eqmt_Info(self)
 
-        self.editor.grid(row=0, rowspan=2, column=0, stick=tkinter.N)
+        self.editor.grid(row=0, rowspan=2, column=0, stick=tk.N)
         self.pane_toolbox.grid(
-            row=0, column=1, padx=20, pady=20, stick=tkinter.N + tkinter.W
+            row=0, column=1, padx=20, pady=20, stick=tk.N + tk.W
         )
-        self.pane_eqmt_info.grid(row=1, column=1, padx=20, pady=20, stick=tkinter.N)
+        self.pane_eqmt_info.grid(row=1, column=1, padx=20, pady=20, stick=tk.N)
 
 
 def main():
-    root = tkinter.Tk()
+    root = tk.Tk()
     mainApp = Main_Application(root)
     mainApp.pack(side="top", fill="both", expand=True)
     root.geometry("+0+0")  # puts window in top left
