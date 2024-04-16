@@ -298,10 +298,7 @@ class FuncVars(object):
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
         self.quickdraw_bool = tk.IntVar()
         self.use_specific_bar_bool = tk.BooleanVar()
-        if USE_SPECIFIC_BAR_BOOL_CELL.value is True:
-            self.use_specific_bar_bool.set(True)
-        elif USE_SPECIFIC_BAR_BOOL_CELL.value is False:
-            self.use_specific_bar_bool.set(False)
+        self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL_CELL.value)
 
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
