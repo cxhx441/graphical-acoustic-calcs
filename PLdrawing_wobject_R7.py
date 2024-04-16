@@ -234,41 +234,57 @@ class FuncVars(object):
                 )
             )
 
-        # initialize ignore matrix
-        c = IGNORE_MATRIX_COL # 1-index based
-        r = IGNORE_MATRIX_ROW
-        self.ignore_matrix = list()
-        for eqmt_row in range(len(self.equipment_list)):
-            ignore_rcvrs_list = list()
-            for rcvr_col in range(len(self.receiver_list)):
-                ignore_rcvrs_list.append(
-                    ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
-                )
-            self.ignore_matrix.append(ignore_rcvrs_list)
+        def make_matrix(r: int, c: int, replace_none=None) -> list:
+            matrix = list()
+            for eqmt_row in range(len(self.equipment_list)):
+                rcvrs_list = list()
+                for rcvr_col in range(len(self.receiver_list)):
+                    val = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
+                    if val is None: val = replace_none
+                    rcvrs_list.append(val)
+                matrix.append(rcvrs_list)
+            return matrix
 
-        # initialize directivity matrix
-        c = DIRECTIVITY_MATRIX_COL # 1-index based
-        r = DIRECTIVITY_MATRIX_ROW
-        self.directivity_matrix = list()
-        for eqmt_row in range(len(self.equipment_list)):
-            directivity_rcvrs_list = list()
-            for rcvr_col in range(len(self.receiver_list)):
-                directivity = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
-                if directivity is None:
-                    directivity = 0
-                directivity_rcvrs_list.append(directivity)
-            self.directivity_matrix.append(directivity_rcvrs_list)
+        self.ignore_matrix       = make_matrix(IGNORE_MATRIX_ROW, IGNORE_MATRIX_COL)
+        self.directivity_matrix  = make_matrix(DIRECTIVITY_MATRIX_ROW, DIRECTIVITY_MATRIX_COL, replace_none=0)
+        self.specific_bar_matrix = make_matrix(SPECIFIC_BAR_MATRIX_ROW,SPECIFIC_BAR_MATRIX_COL)
 
-        # initialize specific barrier matrix
-        c = SPECIFIC_BAR_MATRIX_COL # 1-index based
-        r = SPECIFIC_BAR_MATRIX_ROW
-        self.specific_bar_matrix = list()
-        for eqmt_row in range(len(self.equipment_list)):
-            spec_bar_rcvrs_list = list()
-            for rcvr_col in range(len(self.receiver_list)):
-                spec_bar = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
-                spec_bar_rcvrs_list.append(spec_bar)
-            self.specific_bar_matrix.append(spec_bar_rcvrs_list)
+
+        # # initialize ignore matrix
+        # c = IGNORE_MATRIX_COL # 1-index based
+        # r = IGNORE_MATRIX_ROW
+        # self.ignore_matrix = list()
+        # for eqmt_row in range(len(self.equipment_list)):
+        #     ignore_rcvrs_list = list()
+        #     for rcvr_col in range(len(self.receiver_list)):
+        #         ignore_rcvrs_list.append(ws.cell(row=r + eqmt_row, column=c + rcvr_col).value)
+        #     self.ignore_matrix.append(ignore_rcvrs_list)
+
+        # # initialize directivity matrix
+        # c = DIRECTIVITY_MATRIX_COL # 1-index based
+        # r = DIRECTIVITY_MATRIX_ROW
+        # self.directivity_matrix = list()
+        # for eqmt_row in range(len(self.equipment_list)):
+        #     directivity_rcvrs_list = list()
+        #     for rcvr_col in range(len(self.receiver_list)):
+        #         directivity = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
+        #         if directivity is None:
+        #             directivity = 0
+        #         directivity_rcvrs_list.append(directivity)
+        #     self.directivity_matrix.append(directivity_rcvrs_list)
+
+
+        # # initialize specific barrier matrix
+        # c = SPECIFIC_BAR_MATRIX_COL # 1-index based
+        # r = SPECIFIC_BAR_MATRIX_ROW
+        # self.specific_bar_matrix = list()
+        # for eqmt_row in range(len(self.equipment_list)):
+        #     spec_bar_rcvrs_list = list()
+        #     for rcvr_col in range(len(self.receiver_list)):
+        #         spec_bar = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
+        #         spec_bar_rcvrs_list.append(spec_bar)
+        #     self.specific_bar_matrix.append(spec_bar_rcvrs_list)
+
         # initialize master_scale
         self.old_master_scale = 1.0
         self.known_distance_ft = (
