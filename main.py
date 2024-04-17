@@ -1053,9 +1053,9 @@ class Pane_Toolbox(tk.Frame):
         self.button_draw_barrier.grid(          row=2, column=1, sticky=tk.N + tk.W)
         self.checkbox_quickdraw.grid(           row=3, column=1, sticky=tk.N + tk.W)
         self.checkbox_specific_barrier.grid(    row=4, column=1, sticky=tk.N + tk.W)
-        self.button_draw_grid.grid(             row=0, column=3, sticky=tk.N + tk.W)
-        self.button_update_grid.grid(           row=1, column=3, sticky=tk.N + tk.W)
-        self.button_export_bar_file.grid(       row=2, column=3, sticky=tk.N + tk.W)
+        self.button_draw_grid.grid(             row=0, column=2, sticky=tk.N + tk.W)
+        self.button_update_grid.grid(           row=1, column=2, sticky=tk.N + tk.W)
+        self.button_export_bar_file.grid(       row=2, column=2, sticky=tk.N + tk.W)
 
     def update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
@@ -1340,6 +1340,9 @@ class Pane_Eqmt_Info(tk.Frame):
         self.equipment_list_label = tk.Label( self, text="Equipment", font=(None, 15))
         self.receiver_list_label = tk.Label( self, text="Receivers", font=(None, 15))
         self.barrier_list_label = tk.Label(self, text="Barriers", font=(None, 15))
+        self.ignore_matrix_label = tk.Label( self, text="Ignore", font=(None, 15))
+        self.directivity_matrix_label = tk.Label( self, text="Directivity", font=(None, 15))
+        self.specific_bar_matrix_label = tk.Label(self, text="Specific Barrier", font=(None, 15))
         self.generateEqmtTree()
         self.generateRcvrTree()
         self.generateBarrierTree()
@@ -1352,20 +1355,26 @@ class Pane_Eqmt_Info(tk.Frame):
         self.barrier_tree.bind("<Double-1>", self.open_item_editor_window)
         self.deselect_item_from_trees()
 
-        self.entryBox1.grid(                row=0, column=0, sticky=tk.N + tk.W)
-        self.exportList_button.grid(        row=1, column=0, sticky=tk.N + tk.W)
-        self.scaleIndicatorLabel.grid(      row=2, column=0, sticky=tk.N + tk.W)
-        self.status_label.grid(             row=3, column=0, sticky=tk.N + tk.W)
-        self.measurement_label.grid(        row=4, column=0, sticky=tk.N + tk.W)
-        self.equipment_list_label.grid(     row=5, column=0, columnspan=3, pady=10, sticky=tk.N + tk.W)
-        self.equipment_tree.grid(           row=6, column=0, sticky=tk.N + tk.W)
-        self.receiver_list_label.grid(      row=7, column=0, pady=10, sticky=tk.N + tk.W)
-        self.receiver_tree.grid(            row=8, column=0, sticky=tk.N + tk.W)
-        self.barrier_list_label.grid(       row=9, column=0, pady=10, sticky=tk.N + tk.W)
-        self.barrier_tree.grid(             row=10, column=0, sticky=tk.N + tk.W)
-        self.ignore_matrix_tree.grid(       row=8, column=1, padx=0, sticky=tk.N + tk.W)
-        self.directivity_matrix_tree.grid(  row=10, column=1, padx=0, sticky=tk.N + tk.W)
-        self.specific_bar_matrix_tree.grid( row=10, column=3, padx=0, sticky=tk.N + tk.W)
+        self.entryBox1.grid(                row=0, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.exportList_button.grid(        row=1, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.scaleIndicatorLabel.grid(      row=2, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.status_label.grid(             row=3, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.measurement_label.grid(        row=4, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+
+        self.equipment_list_label.grid(     row=5, column=0, padx=0, pady=10, sticky=tk.N + tk.W)
+        self.equipment_tree.grid(           row=6, column=0, padx=0, pady=0, columnspan=3, sticky=tk.N + tk.W)
+
+        self.receiver_list_label.grid(      row=7, column=0, padx=0, pady=10, sticky=tk.N + tk.W)
+        self.receiver_tree.grid(            row=8, column=0, padx=0, pady=0,  sticky=tk.N + tk.W)
+        self.ignore_matrix_label.grid(      row=7, column=1, padx=0, pady=10,  sticky=tk.N + tk.W)
+        self.ignore_matrix_tree.grid(       row=8, column=1, padx=10, pady=0, sticky=tk.N + tk.W)
+
+        self.barrier_list_label.grid(       row=9, column=0, padx=10, pady=10, sticky=tk.N + tk.W)
+        self.barrier_tree.grid(             row=10, column=0,padx=10, pady=0, sticky=tk.N + tk.W)
+        self.directivity_matrix_label.grid( row=9, column=1, padx=10, pady=10, sticky=tk.N + tk.W)
+        self.directivity_matrix_tree.grid(  row=10, column=1, padx=10, pady=0, sticky=tk.N + tk.W)
+        self.specific_bar_matrix_label.grid( row=9, column=2, padx=10, pady=10, sticky=tk.N + tk.W)
+        self.specific_bar_matrix_tree.grid( row=10, column=2, padx=10, pady=0, sticky=tk.N + tk.W)
 
     def generateEqmtTree(self):
         try:  # delete tree if already exists
@@ -2598,41 +2607,33 @@ class Pane_Eqmt_Info(tk.Frame):
                 self.newWindow, font=(None, 15), width=24
             )
 
-            self.count_label.grid(row=0, column=0, sticky=tk.N + tk.W)
-            self.eqmt_tag_label.grid(row=1, column=0, sticky=tk.N + tk.W)
-            self.path_label.grid(row=2, column=0, sticky=tk.N + tk.W)
-            self.make_label.grid(row=3, column=0, sticky=tk.N + tk.W)
-            self.model_label.grid(row=4, column=0, sticky=tk.N + tk.W)
-            self.sound_level_label.grid(row=5, column=0, sticky=tk.N + tk.W)
-            self.sound_ref_dist_label.grid(
-                row=6, column=0, sticky=tk.N + tk.W
-            )
-            self.tested_q_label.grid(row=7, column=0, sticky=tk.N + tk.W)
-            self.installed_q_label.grid(row=8, column=0, sticky=tk.N + tk.W)
-            self.insertion_loss_label.grid(
-                row=9, column=0, sticky=tk.N + tk.W
-            )
-            self.x_coord_label.grid(row=10, column=0, sticky=tk.N + tk.W)
-            self.y_coord_label.grid(row=11, column=0, sticky=tk.N + tk.W)
-            self.z_coord_label.grid(row=12, column=0, sticky=tk.N + tk.W)
+            self.count_label.grid(          row=0, column=0, sticky=tk.N + tk.W)
+            self.eqmt_tag_label.grid(       row=1, column=0, sticky=tk.N + tk.W)
+            self.path_label.grid(           row=2, column=0, sticky=tk.N + tk.W)
+            self.make_label.grid(           row=3, column=0, sticky=tk.N + tk.W)
+            self.model_label.grid(          row=4, column=0, sticky=tk.N + tk.W)
+            self.sound_level_label.grid(    row=5, column=0, sticky=tk.N + tk.W)
+            self.sound_ref_dist_label.grid( row=6, column=0, sticky=tk.N + tk.W)
+            self.tested_q_label.grid(       row=7, column=0, sticky=tk.N + tk.W)
+            self.installed_q_label.grid(    row=8, column=0, sticky=tk.N + tk.W)
+            self.insertion_loss_label.grid( row=9, column=0, sticky=tk.N + tk.W)
+            self.x_coord_label.grid(        row=10, column=0, sticky=tk.N + tk.W)
+            self.y_coord_label.grid(        row=11, column=0, sticky=tk.N + tk.W)
+            self.z_coord_label.grid(        row=12, column=0, sticky=tk.N + tk.W)
 
-            self.count_input.grid(row=0, column=1, sticky=tk.N + tk.W)
-            self.eqmt_tag_input.grid(row=1, column=1, sticky=tk.N + tk.W)
-            self.path_input.grid(row=2, column=1, sticky=tk.N + tk.W)
-            self.make_input.grid(row=3, column=1, sticky=tk.N + tk.W)
-            self.model_input.grid(row=4, column=1, sticky=tk.N + tk.W)
-            self.sound_level_input.grid(row=5, column=1, sticky=tk.N + tk.W)
-            self.sound_ref_dist_input.grid(
-                row=6, column=1, sticky=tk.N + tk.W
-            )
-            self.tested_q_input.grid(row=7, column=1, sticky=tk.N + tk.W)
-            self.installed_q_input.grid(row=8, column=1, sticky=tk.N + tk.W)
-            self.insertion_loss_input.grid(
-                row=9, column=1, sticky=tk.N + tk.W
-            )
-            self.x_coord_input.grid(row=10, column=1, sticky=tk.N + tk.W)
-            self.y_coord_input.grid(row=11, column=1, sticky=tk.N + tk.W)
-            self.z_coord_input.grid(row=12, column=1, sticky=tk.N + tk.W)
+            self.count_input.grid(          row=0, column=1, sticky=tk.N + tk.W)
+            self.eqmt_tag_input.grid(       row=1, column=1, sticky=tk.N + tk.W)
+            self.path_input.grid(           row=2, column=1, sticky=tk.N + tk.W)
+            self.make_input.grid(           row=3, column=1, sticky=tk.N + tk.W)
+            self.model_input.grid(          row=4, column=1, sticky=tk.N + tk.W)
+            self.sound_level_input.grid(    row=5, column=1, sticky=tk.N + tk.W)
+            self.sound_ref_dist_input.grid( row=6, column=1, sticky=tk.N + tk.W)
+            self.tested_q_input.grid(       row=7, column=1, sticky=tk.N + tk.W)
+            self.installed_q_input.grid(    row=8, column=1, sticky=tk.N + tk.W)
+            self.insertion_loss_input.grid( row=9, column=1, sticky=tk.N + tk.W)
+            self.x_coord_input.grid(        row=10, column=1, sticky=tk.N + tk.W)
+            self.y_coord_input.grid(        row=11, column=1, sticky=tk.N + tk.W)
+            self.z_coord_input.grid(        row=12, column=1, sticky=tk.N + tk.W)
 
             self.count_input.insert(0, self.current_obj.count)
             self.eqmt_tag_input.insert(0, self.current_obj.eqmt_tag)
@@ -2685,16 +2686,16 @@ class Pane_Eqmt_Info(tk.Frame):
                 self.newWindow, font=(None, 15), width=24
             )
 
-            self.r_name_label.grid(row=0, column=0, sticky=tk.N + tk.W)
-            self.x_coord_label.grid(row=1, column=0, sticky=tk.N + tk.W)
-            self.y_coord_label.grid(row=2, column=0, sticky=tk.N + tk.W)
-            self.z_coord_label.grid(row=3, column=0, sticky=tk.N + tk.W)
+            self.r_name_label.grid(     row=0, column=0, sticky=tk.N + tk.W)
+            self.x_coord_label.grid(    row=1, column=0, sticky=tk.N + tk.W)
+            self.y_coord_label.grid(    row=2, column=0, sticky=tk.N + tk.W)
+            self.z_coord_label.grid(    row=3, column=0, sticky=tk.N + tk.W)
             self.sound_limit_label.grid(row=4, column=0, sticky=tk.N + tk.W)
 
-            self.r_name_input.grid(row=0, column=1, sticky=tk.N + tk.W)
-            self.x_coord_input.grid(row=1, column=1, sticky=tk.N + tk.W)
-            self.y_coord_input.grid(row=2, column=1, sticky=tk.N + tk.W)
-            self.z_coord_input.grid(row=3, column=1, sticky=tk.N + tk.W)
+            self.r_name_input.grid(     row=0, column=1, sticky=tk.N + tk.W)
+            self.x_coord_input.grid(    row=1, column=1, sticky=tk.N + tk.W)
+            self.y_coord_input.grid(    row=2, column=1, sticky=tk.N + tk.W)
+            self.z_coord_input.grid(    row=3, column=1, sticky=tk.N + tk.W)
             self.sound_limit_input.grid(row=4, column=1, sticky=tk.N + tk.W)
 
             self.r_name_input.insert(0, self.current_obj.r_name)
@@ -2798,9 +2799,7 @@ class Main_Application(tk.Frame):
         self.pane_eqmt_info = Pane_Eqmt_Info(self)
 
         self.editor.grid(row=0, rowspan=2, column=0, stick=tk.N)
-        self.pane_toolbox.grid(
-            row=0, column=1, padx=20, pady=20, stick=tk.N + tk.W
-        )
+        self.pane_toolbox.grid( row=0, column=1, padx=20, pady=20, stick=tk.N + tk.W)
         self.pane_eqmt_info.grid(row=1, column=1, padx=20, pady=20, stick=tk.N)
 
 
