@@ -13,7 +13,6 @@ import csv
 import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
-TOP_IMAGE_FILEPATH = "top_image.png"
 XL_FILEPATH        = "Aegis San Rafael - PL - 2020.08.17.xlsm"
 XL_TEMP_FILEPATH   = "_temp.xlsm"
 XL_FILEPATH_SAVE   = XL_FILEPATH[0:-5] + " - exported.xlsm"
@@ -404,7 +403,6 @@ class Editor(tk.Frame):
 
         # open image
         self.image  = Image.open(BED_IMAGE_FILEPATH)
-        self.image2 = Image.open(TOP_IMAGE_FILEPATH)
 
         # image sizing
         self.imageWidth, self.imageHeight = self.image.size
@@ -417,12 +415,7 @@ class Editor(tk.Frame):
         self.image              = self.image.resize(
             (self.imageWidth, self.imageHeight), Image.LANCZOS
         )
-        self.image2_new_width  = int(self.image2.size[0] / 2)
-        self.image2_new_height = int(self.image2.size[1] / 2)
-        self.image2            = self.image2.resize( (self.image2_new_width, self.image2_new_height), Image.LANCZOS
-        )
         self.tk_image  = ImageTk.PhotoImage(self.image)
-        self.tk_image2 = ImageTk.PhotoImage(self.image2)
 
         # canvas sizing
         self.screen_width        = self.winfo_screenwidth()
@@ -439,9 +432,6 @@ class Editor(tk.Frame):
         # giving scrollbars
         self.canvas.config(scrollregion=(0, 0, self.imageWidth, self.imageHeight))
         self.canvas.create_image(0, 0, anchor="nw", image=self.tk_image, tag="bed_layer")
-        image2_x_coord = self.image2.size[0] / 2
-        image2_y_coord = self.image2.size[1] / 2
-        self.canvas.create_image(image2_x_coord, image2_y_coord, tag="eqmt_drawing", image=self.tk_image2)
 
         """scroll bar setup"""
         self.vScrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
@@ -910,138 +900,6 @@ class Editor(tk.Frame):
             self.x0, self.y0, self.curX, self.curY, fill="red", width=5
         )
 
-    def rotating_eqmt_drawing_leftMouseClick(self, event):
-        self.get_current_n_start_mouse_pos(event)
-        # calc angle at start point
-        self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
-        self.angle0 = (
-            self.get_angle(
-                self.x0 - self.eqmt_drawing_center[0],
-                self.y0 - self.eqmt_drawing_center[1],
-            )
-            - self.angle
-        )
-
-    def rotating_eqmt_drawing_leftMouseMove(self, event):
-        self.get_current_mouse_pos(event)
-        # calculate current angle relative to initial angle
-        self.angle_1 = self.get_angle(
-            self.curX - self.eqmt_drawing_center[0],
-            self.curY - self.eqmt_drawing_center[1],
-        )
-        dwg_x = self.eqmt_drawing_center[0]
-        dwg_y = self.eqmt_drawing_center[1]
-
-        if self.curX > dwg_x and self.curY > dwg_y:
-            self.angle_1 *= -1
-        elif self.curX < dwg_x and self.curY < dwg_y:
-            self.angle_1 = 180 - self.angle_1
-        elif self.curX < dwg_x and self.curY > dwg_y:
-            self.angle_1 = self.angle_1 + 180
-        elif self.curX < dwg_x and self.curY > dwg_y:
-            self.angle_1 = self.angle_1 + 360
-
-        self.angle = self.angle_1
-
-        self.canvas.delete("eqmt_drawing")
-        self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
-        self.canvas.create_image(
-            self.eqmt_drawing_center[0],
-            self.eqmt_drawing_center[1],
-            image=self.tk_image2,
-            tag="eqmt_drawing",
-        )
-        self.canvas.tag_lower("eqmt_rdawing")
-        self.canvas.tag_lower("bed_layer")
-
-    def moving_eqmt_drawing_leftMouseClick(self, event):
-        self.get_current_n_start_mouse_pos(event)
-        self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
-        x_shifter = self.curX - self.x0
-        y_shifter = self.curY - self.y0
-        self.canvas.delete("eqmt_drawing")
-        self.canvas.create_image(
-            self.eqmt_drawing_center[0] + x_shifter,
-            self.eqmt_drawing_center[1] + y_shifter,
-            image=self.tk_image2,
-            tag="eqmt_drawing",
-        )
-
-    def moving_eqmt_drawing_leftMouseMove(self, event):
-        self.get_current_mouse_pos(event)
-        # self.eqmt_drawing_center = self.canvas.coords("eqmt_drawing")
-        x_shifter = self.curX - self.x0
-        y_shifter = self.curY - self.y0
-        self.canvas.delete("eqmt_drawing")
-        self.canvas.create_image(
-            self.eqmt_drawing_center[0] + x_shifter,
-            self.eqmt_drawing_center[1] + y_shifter,
-            image=self.tk_image2,
-            tag="eqmt_drawing",
-        )
-        self.canvas.tag_lower("eqmt_drawing")
-        self.canvas.tag_lower("bed_layer")
-
-    def resizing_eqmt_drawing_leftMouseClick(self, event):
-        self.get_current_n_start_mouse_pos(event)
-        self.eqmt_dwg_cntr = self.canvas.coords("eqmt_drawing")
-        self.eqmt_dwg_width_0 = self.image2_new_width
-        self.eqmt_dwg_height_0 = self.image2_new_height
-        self.eqmt_dwg_ratio = self.eqmt_dwg_width_0 / self.eqmt_dwg_height_0
-        self.rect_p1_x0 = self.eqmt_dwg_cntr[0] - self.eqmt_dwg_width_0 / 2
-        self.rect_p2_x0 = self.eqmt_dwg_cntr[0] + self.eqmt_dwg_width_0 / 2
-        self.rect_p1_y0 = self.eqmt_dwg_cntr[1] - self.eqmt_dwg_height_0 / 2
-        self.rect_p2_y0 = self.eqmt_dwg_cntr[1] + self.eqmt_dwg_height_0 / 2
-        self.temp_rect = self.canvas.create_rectangle(
-            self.rect_p1_x0,
-            self.rect_p1_y0,
-            self.rect_p2_x0,
-            self.rect_p2_y0,
-            outline="red",
-        )
-
-    def resizing_eqmt_drawing_leftMouseMove(self, event):
-        self.get_current_mouse_pos(event)
-        self.x_change = self.curX - self.x0
-        self.y_change = self.curY - self.y0
-        self.rect_p1_x1 = self.rect_p1_x0
-        self.rect_p2_x2 = self.rect_p2_x0 + self.x_change
-        self.rect_p1_y1 = self.rect_p1_y0
-        self.rect_p2_y1 = self.rect_p2_y0 + self.x_change / self.eqmt_dwg_ratio
-        self.canvas.coords(
-            self.temp_rect,
-            self.rect_p1_x1,
-            self.rect_p1_y1,
-            self.rect_p2_x2,
-            self.rect_p2_y1,
-        )
-
-    def resizing_eqmt_drawing_leftMouseRelease(self, event):
-        self.get_current_mouse_pos(event)
-        self.eqmt_dwg_width_1 = self.eqmt_dwg_width_0 + int(self.x_change)
-        self.eqmt_dwg_height_1 = int(self.eqmt_dwg_width_1 / self.eqmt_dwg_ratio)
-        self.eqmt_dwg_cntr[0] += int(self.x_change / 2)
-        self.eqmt_dwg_cntr[1] += int((self.x_change / self.eqmt_dwg_ratio) / 2)
-
-        self.canvas.delete("eqmt_drawing")
-        self.canvas.delete(self.temp_rect)
-        self.image2 = self.image2.resize(
-            (self.eqmt_dwg_width_1, self.eqmt_dwg_height_1), Image.LANCZOS
-        )
-        self.tk_image2 = ImageTk.PhotoImage(self.image2.rotate(self.angle, expand=True))
-        self.canvas.create_image(
-            self.eqmt_dwg_cntr[0],
-            self.eqmt_dwg_cntr[1],
-            image=self.tk_image2,
-            tag="eqmt_drawing",
-        )
-
-        self.image2_new_width = self.eqmt_dwg_width_1
-        self.image2_new_height = self.eqmt_dwg_height_1
-
-        self.canvas.tag_lower("eqmt_drawing")
-        self.canvas.tag_lower("bed_layer")
-
     def shift_click(self, event):
         if self.canvas.find_withtag("current"):
             self.eqmt_rcvr_or_barr_tagged = self.canvas.gettags("current")
@@ -1175,24 +1033,6 @@ class Pane_Toolbox(tk.Frame):
             command=self.update_est_noise_levels,
             font=(None, 15),
         )
-        self.button_rotate_eqmt_drawing = tk.Button(
-            self,
-            text="Eqmt Drawing - Rotate",
-            command=self.rotate_eqmt_drawing,
-            font=(None, 15),
-        )
-        self.button_move_eqmt_drawing = tk.Button(
-            self,
-            text="Eqmt Drawing - Move",
-            command=self.move_eqmt_drawing,
-            font=(None, 15),
-        )
-        self.button_resize_eqmt_drawing = tk.Button(
-            self,
-            text="Eqmt Drawing - Resize",
-            command=self.resize_eqmt_drawing,
-            font=(None, 15),
-        )
         self.button_draw_grid = tk.Button(
             self, text="Draw Grid", command=self.draw_grid, font=(None, 15)
         )
@@ -1213,9 +1053,6 @@ class Pane_Toolbox(tk.Frame):
         self.button_draw_barrier.grid(          row=2, column=1, sticky=tk.N + tk.W)
         self.checkbox_quickdraw.grid(           row=3, column=1, sticky=tk.N + tk.W)
         self.checkbox_specific_barrier.grid(    row=4, column=1, sticky=tk.N + tk.W)
-        self.button_rotate_eqmt_drawing.grid(   row=0, column=2, sticky=tk.N + tk.W)
-        self.button_move_eqmt_drawing.grid(     row=1, column=2, sticky=tk.N + tk.W)
-        self.button_resize_eqmt_drawing.grid(   row=2, column=2, sticky=tk.N + tk.W)
         self.button_draw_grid.grid(             row=0, column=3, sticky=tk.N + tk.W)
         self.button_update_grid.grid(           row=1, column=3, sticky=tk.N + tk.W)
         self.button_export_bar_file.grid(       row=2, column=3, sticky=tk.N + tk.W)
@@ -1463,27 +1300,6 @@ class Pane_Toolbox(tk.Frame):
         self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.measureing_leftMouseMove)
         self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease)
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Measuring")
-
-    def rotate_eqmt_drawing(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.rotating_eqmt_drawing_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.rotating_eqmt_drawing_leftMouseMove)
-        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
-        self.parent.pane_eqmt_info.status_label.configure( text="Status: Rotating Equipment Drawing")
-
-    def move_eqmt_drawing(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.moving_eqmt_drawing_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.moving_eqmt_drawing_leftMouseMove)
-        self.parent.editor.canvas.unbind("<ButtonRelease-1>")
-        self.parent.pane_eqmt_info.status_label.configure(
-            text="Status: Moving Equipment Drawing"
-        )
-
-    def resize_eqmt_drawing(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.resizing_eqmt_drawing_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.resizing_eqmt_drawing_leftMouseRelease,)
-        self.parent.pane_eqmt_info.status_label.configure( text="Status: Resizing Equipment Drawing")
-
 
 class Pane_Eqmt_Info(tk.Frame):
     def __init__(self, parent):
