@@ -1542,16 +1542,12 @@ class Pane_Eqmt_Info(tk.Frame):
                 self.maxWidths[col_idx] = maxWidth
 
             # initializing receiver tree
-            self.receiver_tree = tk.ttk.Treeview(
-                self, columns=self.receiver_tree_columns, show="headings"
-            )
+            self.receiver_tree = tk.ttk.Treeview( self, columns=self.receiver_tree_columns, show="headings")
 
             # adding columns and rows
             for col, maxWidth in zip(self.receiver_tree_columns, self.maxWidths):
                 self.receiver_tree.heading(col, text=col)
-                self.receiver_tree.column(
-                    col, minwidth=15, width=maxWidth + 25, stretch=0
-                )
+                self.receiver_tree.column( col, minwidth=15, width=maxWidth + 25, stretch=0)
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value, tags=self.myFont)
 
