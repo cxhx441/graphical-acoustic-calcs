@@ -629,7 +629,7 @@ class Editor(tk.Frame):
             scale_line_coords[1],
             scale_line_coords[3],
         )
-        _known_distance_ft = float(self.parent.pane_eqmt_info.e1.get())
+        _known_distance_ft = float(self.parent.pane_eqmt_info.entryBox1.get())
         self.parent.func_vars.update_master_scale(
             _scale_line_distance_px, _known_distance_ft
         )
@@ -1088,14 +1088,14 @@ class Pane_Toolbox(tk.Frame):
         self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease)
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Drawing Grid")
-        self.parent.pane_eqmt_info.e1.delete(0, "end")
-        self.parent.pane_eqmt_info.e1.insert(0, "elevation, spacing (ft)")
+        self.parent.pane_eqmt_info.entryBox1.delete(0, "end")
+        self.parent.pane_eqmt_info.entryBox1.insert(0, "elevation, spacing (ft)")
 
-        self.parent.pane_eqmt_info.e1.focus()
+        self.parent.pane_eqmt_info.entryBox1.focus()
 
     def update_grid(self):
         self.parent.editor.canvas.delete("grid_level")
-        inputdata = self.parent.pane_eqmt_info.e1.get()
+        inputdata = self.parent.pane_eqmt_info.entryBox1.get()
         inputdata_list = inputdata.split(", ")
         grid_elevation = int(inputdata_list[0])
         spacing = int(inputdata_list[1])
@@ -1284,9 +1284,9 @@ class Pane_Toolbox(tk.Frame):
         self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Setting Scale")
-        self.parent.pane_eqmt_info.e1.delete(0, "end")
-        self.parent.pane_eqmt_info.e1.insert(0, "distance (ft)")
-        self.parent.pane_eqmt_info.e1.focus()
+        self.parent.pane_eqmt_info.entryBox1.delete(0, "end")
+        self.parent.pane_eqmt_info.entryBox1.insert(0, "distance (ft)")
+        self.parent.pane_eqmt_info.entryBox1.focus()
 
     def draw_equipment(self):
         self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick)
