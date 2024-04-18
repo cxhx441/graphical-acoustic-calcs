@@ -1042,7 +1042,7 @@ class Pane_Toolbox(tk.Frame):
             variable=self.parent.func_vars.use_specific_bar_bool,
             onvalue=True,
             offvalue=False,
-            command=self.update_est_noise_levels,
+            command=self.specbar_update_est_noise_levels,
             font=(None, 15),
         )
         self.button_draw_grid = tk.Button(
@@ -1069,8 +1069,10 @@ class Pane_Toolbox(tk.Frame):
         self.button_update_grid.grid(           row=1, column=2, sticky=tk.N + tk.W)
         self.button_export_bar_file.grid(       row=2, column=2, sticky=tk.N + tk.W)
 
-    def update_est_noise_levels(self):
+    def specbar_update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_eqmt_info.generateRcvrTree()
+
 
     def export_bar_file(self):
         with open("bar_export_list.csv", mode="w", newline="") as csvfile:
