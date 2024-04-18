@@ -247,6 +247,18 @@ class FuncVars(object):
         self.ignore_matrix       = make_matrix(IGNORE_MATRIX_ROW, IGNORE_MATRIX_COL)
         self.directivity_matrix  = make_matrix(DIRECTIVITY_MATRIX_ROW, DIRECTIVITY_MATRIX_COL, replace_none=0)
         self.specific_bar_matrix = make_matrix(SPECIFIC_BAR_MATRIX_ROW,SPECIFIC_BAR_MATRIX_COL)
+        for r in range(len(self.specific_bar_matrix)):
+            for c in range(len(self.specific_bar_matrix[r])):
+                s = self.specific_bar_matrix[r][c]
+                if s is None:
+                    continue
+                s = s.split(", ")
+                for i, el, in enumerate(s):
+                    s[i] = el.strip()
+                    s[i] = el.replace(" ", "-")
+                s = ", ".join(s)
+                if s[-1] == ',': s = s[:-1]
+                self.specific_bar_matrix[r][c] = s
 
 
         # # initialize ignore matrix
