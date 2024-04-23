@@ -17,6 +17,7 @@ XL_FILEPATH        = "Aegis San Rafael - PL - 2020.08.17.xlsm"
 XL_TEMP_FILEPATH   = "_temp.xlsm"
 XL_FILEPATH_SAVE   = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT       = "Helvetica 15 bold"
+IMAGE_SIZE_FACTOR  = 1.5
 
 TAKE_ARI_BARRIER        = True
 TAKE_OB_FRESNAL_BARRIER = False
@@ -425,7 +426,7 @@ class Editor(tk.Frame):
 
         # open image
         self._image  = Image.open(BED_IMAGE_FILEPATH)
-        self.image_size_factor  = 1.5
+        self.image_size_factor  = IMAGE_SIZE_FACTOR
 
         # # image sizing
         # width, height = self._image.size
@@ -657,7 +658,7 @@ class Editor(tk.Frame):
             scale_line_coords[2],
             scale_line_coords[1],
             scale_line_coords[3],
-        )
+        ) / self.image_size_factor
         _known_distance_ft = float(self.parent.pane_eqmt_info.entryBox1.get())
         self.parent.func_vars.update_master_scale(
             _scale_line_distance_px, _known_distance_ft
