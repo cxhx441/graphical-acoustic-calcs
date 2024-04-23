@@ -413,22 +413,6 @@ class Editor(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.parent = parent
 
-        # open image
-        self.image  = Image.open(BED_IMAGE_FILEPATH)
-
-        # image sizing
-        self.imageWidth, self.imageHeight = self.image.size
-        print(self.image.size)
-        self.image_size_factor  = 1.5
-        self.imageWidth        *= self.image_size_factor
-        self.imageHeight       *= self.image_size_factor
-        self.imageWidth         = int(self.imageWidth)
-        self.imageHeight        = int(self.imageHeight)
-        self.image              = self.image.resize(
-            (self.imageWidth, self.imageHeight), Image.LANCZOS
-        )
-        self.tk_image  = ImageTk.PhotoImage(self.image)
-
         # canvas sizing
         self.screen_width        = self.winfo_screenwidth()
         self.screen_height       = self.winfo_screenheight()
@@ -437,13 +421,25 @@ class Editor(tk.Frame):
         self.canvasHeight        = self.screen_height * self.canvas_size_factor
         self.canvasWidth        -= 2000  # otherwise window is off the screen on home pc
         self.canvasHeight       -= 250  # otherwise window is off the screen on home pc
-        self.canvas              = tk.Canvas(
-            self, width=self.canvasWidth, height=self.canvasHeight, cursor = "cross"
-        )
+        self.canvas              = tk.Canvas( self, width=self.canvasWidth, height=self.canvasHeight, cursor = "cross")
 
-        # giving scrollbars
-        self.canvas.config(scrollregion=(0, 0, self.imageWidth, self.imageHeight))
-        self.canvas.create_image(0, 0, anchor="nw", image=self.tk_image, tag="bed_layer")
+        # open image
+        self._image  = Image.open(BED_IMAGE_FILEPATH)
+        self.image_size_factor  = 1.5
+
+        # # image sizing
+        # width, height = self._image.size
+        # self.image_size_factor  = 1.5
+        # # self.imageWidth        *= self.image_size_factor
+        # # self.imageHeight       *= self.image_size_factor
+        # width = int(width)
+        # height = int(height)
+        # resized_image      = self._image.resize( (width, height), Image.Resampling.LANCZOS)
+        # self._photo_image  = ImageTk.PhotoImage(resized_image)
+        # self._current_image = self.canvas.create_image(0, 0, anchor="nw", image=self._photo_image, tag="bed_layer")
+        # # giving scrollbars
+        # self.canvas.config(scrollregion=(0, 0, width, height))
+
 
         """scroll bar setup"""
         self.vScrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
@@ -458,6 +454,7 @@ class Editor(tk.Frame):
         self.hScrollbar.grid(   row=1, column=0, sticky=tk.E + tk.W)
         """scroll bar setup"""
 
+        self.update_image()
         self.initialize_eqmt_rcvr_barrier_drawings()
 
         self.temp_rect    = None
@@ -470,9 +467,34 @@ class Editor(tk.Frame):
         self.canvas.bind("<Shift-B1-Motion>", self.shift_click_move)
         self.canvas.bind("<Shift-ButtonRelease-1>", self.shift_click_release)
 
-        """Scrollable image"""
+        """Scrollable/Zoomable image"""
         self.canvas.bind("<Enter>", self._bound_to_mousewheel)
         self.canvas.bind("<Leave>", self._unbound_to_mousewheel)
+
+    def update_image(self):
+        # image sizing
+        width, height = self._image.size
+        new_width = int(width * self.image_size_factor)
+        new_height = int(height * self.image_size_factor)
+        resized_image          = self._image.resize( (new_width, new_height), Image.Resampling.LANCZOS)
+        self._photo_image  = ImageTk.PhotoImage(resized_image)
+        self._current_image = self.canvas.create_image(0, 0, anchor="nw", image=self._photo_image, tag="bed_layer")
+        # giving scrollbars
+        self.canvas.config(scrollregion=(0, 0, new_width, new_height))
+
+    def _zoom_in(self):
+        self.canvas.delete("all")
+        self.image_size_factor *= 1.1
+        self.parent.func_vars.master_scale /= 1.1
+        self.update_image()
+        self.initialize_eqmt_rcvr_barrier_drawings()
+
+    def _zoom_out(self):
+        self.canvas.delete("all")
+        self.image_size_factor /= 1.1
+        self.parent.func_vars.master_scale *= 1.1
+        self.update_image()
+        self.initialize_eqmt_rcvr_barrier_drawings()
 
     def initialize_eqmt_rcvr_barrier_drawings(self):
         """initialize receivers and equipment boxes and barriers"""
@@ -539,6 +561,7 @@ class Editor(tk.Frame):
     def _bound_to_mousewheel(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Shift-MouseWheel>", self._on_shift_mousewheel)
+        self.canvas.bind_all("<Control-MouseWheel>", self._on_ctrl_mousewheel)
 
     def _unbound_to_mousewheel(self, event):
         self.canvas.unbind_all("<MouseWheel>")
@@ -549,6 +572,12 @@ class Editor(tk.Frame):
     def _on_shift_mousewheel(self, event):
         self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
         """Scrollable image"""
+
+    def _on_ctrl_mousewheel(self, event):
+        if event.delta >0:
+            self._zoom_in()
+        else:
+            self._zoom_out()
 
     def get_angle(self, x, y):
         v0 = [x, 0]
