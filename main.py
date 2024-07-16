@@ -14,41 +14,41 @@ import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
 XL_FILEPATH        = "Aegis San Rafael - PL - 2020.08.17.xlsm"
-XL_TEMP_FILEPATH   = "_temp.xlsm"
-XL_FILEPATH_SAVE   = XL_FILEPATH[0:-5] + " - exported.xlsm"
-DRAWING_FONT       = "Helvetica 15 bold"
+XL_TEMP_FILEPATH = "_temp.xlsm"
+XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
+DRAWING_FONT = "Helvetica 15 bold"
 
-TAKE_ARI_BARRIER        = True
+TAKE_ARI_BARRIER = True
 TAKE_OB_FRESNAL_BARRIER = False
 
 # setting columns
 shutil.copyfile(XL_FILEPATH, XL_TEMP_FILEPATH)
-wb                  = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
-ws                  = wb["Input LwA_XYZ"]
-EQMT_COUNT          = ws["A"]
-EQMT_TAG            = ws["B"]
-PATH                = ws["C"]
-MAKE                = ws["D"]
-MODEL               = ws["E"]
-HZ63                = ws["F"]
-HZ125               = ws["G"]
-HZ250               = ws["H"]
-HZ500               = ws["I"]
-HZ1000              = ws["J"]
-HZ2000              = ws["K"]
-HZ4000              = ws["L"]
-HZ8000              = ws["M"]
-SOUND_LEVEL         = ws["N"]
-SOUND_REF_DIST      = ws["O"]
-TESTED_Q            = ws["P"]
-INSTALLED_Q         = ws["R"]
+wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
+ws = wb["Input LwA_XYZ"]
+EQMT_COUNT = ws["A"]
+EQMT_TAG = ws["B"]
+PATH = ws["C"]
+MAKE = ws["D"]
+MODEL = ws["E"]
+HZ63 = ws["F"]
+HZ125 = ws["G"]
+HZ250 = ws["H"]
+HZ500 = ws["I"]
+HZ1000 = ws["J"]
+HZ2000 = ws["K"]
+HZ4000 = ws["L"]
+HZ8000 = ws["M"]
+SOUND_LEVEL = ws["N"]
+SOUND_REF_DIST = ws["O"]
+TESTED_Q = ws["P"]
+INSTALLED_Q = ws["R"]
 EQMT_INSERTION_LOSS = ws["S"]
-EQMT_X_COORD        = ws["T"]
-EQMT_Y_COORD        = ws["U"]
-EQMT_Z_COORD        = ws["V"]
+EQMT_X_COORD = ws["T"]
+EQMT_Y_COORD = ws["U"]
+EQMT_Z_COORD = ws["V"]
 
 # RCVRS
-R_NAME      = ws["Z"]
+R_NAME = ws["Z"]
 REC_X_COORD = ws["AA"]
 REC_Y_COORD = ws["AB"]
 REC_Z_COORD = ws["AC"]
@@ -64,7 +64,7 @@ BAR_Y1_COORD = ws["AE"]
 BAR_Z1_COORD = ws["AF"]
 
 # SCALING
-KNOWN_DISTANCE_FT_CELL      = ws["AE20"]
+KNOWN_DISTANCE_FT_CELL = ws["AE20"]
 SCALE_LINE_DISTANCE_PX_CELL = ws["AF20"]
 
 # SPECIFIC BAR BOOL
@@ -73,25 +73,25 @@ if type(USE_SPECIFIC_BAR_BOOL_CELL.value) is not bool:
     raise TypeError("cell must be TRUE or FALSE")
 
 # ROW/COLs for MATRICES
-IGNORE_MATRIX_COL       = 108 # 1-index based
-IGNORE_MATRIX_ROW       = 2   # 1-index based
-DIRECTIVITY_MATRIX_COL  = 125 # 1-index based
-DIRECTIVITY_MATRIX_ROW  = 2   # 1-index based
+IGNORE_MATRIX_COL = 108  # 1-index based
+IGNORE_MATRIX_ROW = 2  # 1-index based
+DIRECTIVITY_MATRIX_COL = 125  # 1-index based
+DIRECTIVITY_MATRIX_ROW = 2  # 1-index based
 SPECIFIC_BAR_MATRIX_COL = 91  # 1-index based
-SPECIFIC_BAR_MATRIX_ROW = 2   # 1-index based
+SPECIFIC_BAR_MATRIX_ROW = 2  # 1-index based
 
 
 # ROW/COL VALUES FOR Export List Button
-EQMT_NAME_COL    = 1
+EQMT_NAME_COL = 1
 EQMT_X_COORD_COL = 19
 EQMT_Y_COORD_COL = 20
 
-RCVR_NAME_COL    = 25
+RCVR_NAME_COL = 25
 RCVR_X_COORD_COL = 26
 RCVR_Y_COORD_COL = 27
 
-BAR_NAME_COL     = 25
-BAR_START_ROW    = 24 # 1-index based
+BAR_NAME_COL = 25
+BAR_START_ROW = 24  # 1-index based
 BAR_X0_COORD_COL = 26
 BAR_Y0_COORD_COL = 27
 BAR_Z0_COORD_COL = 28
@@ -100,6 +100,7 @@ BAR_Y1_COORD_COL = 30
 BAR_Z1_COORD_COL = 31
 
 BAR_IL_COL_RANGE = range(73, 88)
+
 
 class FuncVars(object):
     def __init__(self, parent):
@@ -187,8 +188,10 @@ class FuncVars(object):
         for r_name, x_coord, y_coord, z_coord, sound_limit in zip(
             R_NAME, REC_X_COORD, REC_Y_COORD, REC_Z_COORD, SOUND_LIMIT
         ):
-            if r_name.value == "R#": continue
-            if r_name.value == None: break
+            if r_name.value == "R#":
+                continue
+            if r_name.value == None:
+                break
             self.receiver_list.append(
                 Receiver(
                     str(r_name.value),
@@ -219,8 +222,10 @@ class FuncVars(object):
             BAR_Y1_COORD,
             BAR_Z1_COORD,
         ):
-            if int(barrier_name.coordinate[1:]) < 24: continue
-            if barrier_name.value == None           : break
+            if int(barrier_name.coordinate[1:]) < 24:
+                continue
+            if barrier_name.value == None:
+                break
             self.barrier_list.append(
                 Barrier(
                     str(barrier_name.value),
@@ -239,27 +244,35 @@ class FuncVars(object):
                 rcvrs_list = list()
                 for rcvr_col in range(len(self.receiver_list)):
                     val = ws.cell(row=r + eqmt_row, column=c + rcvr_col).value
-                    if val is None: val = replace_none
+                    if val is None:
+                        val = replace_none
                     rcvrs_list.append(val)
                 matrix.append(rcvrs_list)
             return matrix
 
-        self.ignore_matrix       = make_matrix(IGNORE_MATRIX_ROW, IGNORE_MATRIX_COL)
-        self.directivity_matrix  = make_matrix(DIRECTIVITY_MATRIX_ROW, DIRECTIVITY_MATRIX_COL, replace_none=0)
-        self.specific_bar_matrix = make_matrix(SPECIFIC_BAR_MATRIX_ROW,SPECIFIC_BAR_MATRIX_COL)
+        self.ignore_matrix = make_matrix(IGNORE_MATRIX_ROW, IGNORE_MATRIX_COL)
+        self.directivity_matrix = make_matrix(
+            DIRECTIVITY_MATRIX_ROW, DIRECTIVITY_MATRIX_COL, replace_none=0
+        )
+        self.specific_bar_matrix = make_matrix(
+            SPECIFIC_BAR_MATRIX_ROW, SPECIFIC_BAR_MATRIX_COL
+        )
         for r in range(len(self.specific_bar_matrix)):
             for c in range(len(self.specific_bar_matrix[r])):
                 s = self.specific_bar_matrix[r][c]
                 if s is None:
                     continue
                 s = s.split(", ")
-                for i, el, in enumerate(s):
+                for (
+                    i,
+                    el,
+                ) in enumerate(s):
                     s[i] = el.strip()
                     s[i] = el.replace(" ", "-")
                 s = ", ".join(s)
-                if s[-1] == ',': s = s[:-1]
+                if s[-1] == ",":
+                    s = s[:-1]
                 self.specific_bar_matrix[r][c] = s
-
 
         # # initialize ignore matrix
         # c = IGNORE_MATRIX_COL # 1-index based
@@ -284,7 +297,6 @@ class FuncVars(object):
         #         directivity_rcvrs_list.append(directivity)
         #     self.directivity_matrix.append(directivity_rcvrs_list)
 
-
         # # initialize specific barrier matrix
         # c = SPECIFIC_BAR_MATRIX_COL # 1-index based
         # r = SPECIFIC_BAR_MATRIX_ROW
@@ -306,9 +318,9 @@ class FuncVars(object):
             self.scale_line_distance_px = SCALE_LINE_DISTANCE_PX_CELL.value
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
         self.quickdraw_bool = tk.IntVar()
+        self.e_to_r_lines_bool = tk.BooleanVar()
         self.use_specific_bar_bool = tk.BooleanVar()
         self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL_CELL.value)
-
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
@@ -388,62 +400,69 @@ class Equipment(object):
 
 
 class Receiver(object):
-    def __init__( self, r_name, x_coord, y_coord, z_coord, sound_limit, predicted_sound_level):
-        self.r_name                = r_name.replace(" ", "-")
-        self.x_coord               = x_coord if x_coord != None else 0
-        self.y_coord               = y_coord if y_coord != None else 0
-        self.z_coord               = z_coord if z_coord != None else 0
-        self.sound_limit           = sound_limit
+    def __init__(
+        self, r_name, x_coord, y_coord, z_coord, sound_limit, predicted_sound_level
+    ):
+        self.r_name = r_name.replace(" ", "-")
+        self.x_coord = x_coord if x_coord != None else 0
+        self.y_coord = y_coord if y_coord != None else 0
+        self.z_coord = z_coord if z_coord != None else 0
+        self.sound_limit = sound_limit
         self.predicted_sound_level = predicted_sound_level
 
 
 class Barrier(object):
-    def __init__( self, barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord):
+    def __init__(
+        self, barrier_name, x0_coord, y0_coord, z0_coord, x1_coord, y1_coord, z1_coord
+    ):
         self.barrier_name = barrier_name.replace(" ", "-")
-        self.x0_coord     = x0_coord if x0_coord != None else 0
-        self.y0_coord     = y0_coord if y0_coord != None else 0
-        self.z0_coord     = z0_coord if z0_coord != None else 0
-        self.x1_coord     = x1_coord if x1_coord != None else 0
-        self.y1_coord     = y1_coord if y1_coord != None else 0
-        self.z1_coord     = z1_coord if z1_coord != None else 0
+        self.x0_coord = x0_coord if x0_coord != None else 0
+        self.y0_coord = y0_coord if y0_coord != None else 0
+        self.z0_coord = z0_coord if z0_coord != None else 0
+        self.x1_coord = x1_coord if x1_coord != None else 0
+        self.y1_coord = y1_coord if y1_coord != None else 0
+        self.z1_coord = z1_coord if z1_coord != None else 0
 
 
 class Editor(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
+        self.e_to_r_lines = []
 
         # open image
-        self.image  = Image.open(BED_IMAGE_FILEPATH)
+        self.image = Image.open(BED_IMAGE_FILEPATH)
 
         # image sizing
         self.imageWidth, self.imageHeight = self.image.size
         print(self.image.size)
-        self.image_size_factor  = 1.5
-        self.imageWidth        *= self.image_size_factor
-        self.imageHeight       *= self.image_size_factor
-        self.imageWidth         = int(self.imageWidth)
-        self.imageHeight        = int(self.imageHeight)
-        self.image              = self.image.resize(
+        self.image_size_factor = 1.5
+        self.imageWidth *= self.image_size_factor
+        self.imageHeight *= self.image_size_factor
+        self.imageWidth = int(self.imageWidth)
+        self.imageHeight = int(self.imageHeight)
+        self.image = self.image.resize(
             (self.imageWidth, self.imageHeight), Image.LANCZOS
         )
-        self.tk_image  = ImageTk.PhotoImage(self.image)
+        self.tk_image = ImageTk.PhotoImage(self.image)
 
         # canvas sizing
-        self.screen_width        = self.winfo_screenwidth()
-        self.screen_height       = self.winfo_screenheight()
-        self.canvas_size_factor  = 1
-        self.canvasWidth         = self.screen_width * self.canvas_size_factor
-        self.canvasHeight        = self.screen_height * self.canvas_size_factor
-        self.canvasWidth        -= 2000  # otherwise window is off the screen on home pc
-        self.canvasHeight       -= 250  # otherwise window is off the screen on home pc
-        self.canvas              = tk.Canvas(
-            self, width=self.canvasWidth, height=self.canvasHeight, cursor = "cross"
+        self.screen_width = self.winfo_screenwidth()
+        self.screen_height = self.winfo_screenheight()
+        self.canvas_size_factor = 1
+        self.canvasWidth = self.screen_width * self.canvas_size_factor
+        self.canvasHeight = self.screen_height * self.canvas_size_factor
+        self.canvasWidth -= 2000  # otherwise window is off the screen on home pc
+        self.canvasHeight -= 250  # otherwise window is off the screen on home pc
+        self.canvas = tk.Canvas(
+            self, width=self.canvasWidth, height=self.canvasHeight, cursor="cross"
         )
 
         # giving scrollbars
         self.canvas.config(scrollregion=(0, 0, self.imageWidth, self.imageHeight))
-        self.canvas.create_image(0, 0, anchor="nw", image=self.tk_image, tag="bed_layer")
+        self.canvas.create_image(
+            0, 0, anchor="nw", image=self.tk_image, tag="bed_layer"
+        )
 
         """scroll bar setup"""
         self.vScrollbar = tk.Scrollbar(self, orient=tk.VERTICAL)
@@ -453,18 +472,18 @@ class Editor(tk.Frame):
         self.canvas.config(yscrollcommand=self.vScrollbar.set)
         self.canvas.config(xscrollcommand=self.hScrollbar.set)
 
-        self.canvas.grid(       row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
-        self.vScrollbar.grid(   row=0, column=1, stick=tk.N + tk.S)
-        self.hScrollbar.grid(   row=1, column=0, sticky=tk.E + tk.W)
+        self.canvas.grid(row=0, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.vScrollbar.grid(row=0, column=1, stick=tk.N + tk.S)
+        self.hScrollbar.grid(row=1, column=0, sticky=tk.E + tk.W)
         """scroll bar setup"""
 
         self.initialize_eqmt_rcvr_barrier_drawings()
 
-        self.temp_rect    = None
-        self.temp_line    = None
-        self.scale_line   = None
+        self.temp_rect = None
+        self.temp_line = None
+        self.scale_line = None
         self.measure_line = None
-        self.angle        = 0
+        self.angle = 0
 
         self.canvas.bind("<Shift-ButtonPress-1>", self.shift_click)
         self.canvas.bind("<Shift-B1-Motion>", self.shift_click_move)
@@ -564,12 +583,17 @@ class Editor(tk.Frame):
 
     def update_distance_label(self):
         dist = math.sqrt((self.x0 - self.curX) ** 2 + (self.y0 - self.curY) ** 2)
-        dist = round(self.parent.func_vars.master_scale * dist, 2,)
-        self.parent.pane_eqmt_info.measurement_label.configure(text="Measurement: " + str(dist) + " ft")
+        dist = round(
+            self.parent.func_vars.master_scale * dist,
+            2,
+        )
+        self.parent.pane_eqmt_info.measurement_label.configure(
+            text="Measurement: " + str(dist) + " ft"
+        )
 
     def get_current_n_start_mouse_pos(self, event):
-        self.x0   = self.canvas.canvasx(event.x)
-        self.y0   = self.canvas.canvasy(event.y)
+        self.x0 = self.canvas.canvasx(event.x)
+        self.y0 = self.canvas.canvasy(event.y)
         self.curX = self.canvas.canvasx(event.x)
         self.curY = self.canvas.canvasy(event.y)
 
@@ -641,7 +665,9 @@ class Editor(tk.Frame):
             + str(self.parent.func_vars.known_distance_ft)
             + " ft"
         )
-        self.parent.pane_eqmt_info.scaleIndicatorLabel.configure( text=scaleIndicatorLabelText)
+        self.parent.pane_eqmt_info.scaleIndicatorLabel.configure(
+            text=scaleIndicatorLabelText
+        )
 
     def drawing_eqmt_leftMouseClick(self, event):
         self.get_current_n_start_mouse_pos(event)
@@ -979,24 +1005,40 @@ class Editor(tk.Frame):
 
         for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
-                obj.x_coord = self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                obj.y_coord = self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+                obj.x_coord = (
+                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+                )
+                obj.y_coord = (
+                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+                )
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
         for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == self.tag_rcvr_or_barr_num:
-                obj.x_coord = self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                obj.y_coord = self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+                obj.x_coord = (
+                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+                )
+                obj.y_coord = (
+                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+                )
                 obj.x_coord = round(obj.x_coord, 2)
                 obj.y_coord = round(obj.y_coord, 2)
 
         for obj in self.parent.func_vars.barrier_list:
             if obj.barrier_name == self.tag_rcvr_or_barr_num:
-                obj.x0_coord = self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                obj.y0_coord = self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                obj.x1_coord = self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
-                obj.y1_coord = self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
+                obj.x0_coord = (
+                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
+                )
+                obj.y0_coord = (
+                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
+                )
+                obj.x1_coord = (
+                    self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
+                )
+                obj.y1_coord = (
+                    self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
+                )
                 obj.x0_coord = round(obj.x0_coord, 2)
                 obj.y0_coord = round(obj.y0_coord, 2)
                 obj.x1_coord = round(obj.x1_coord, 2)
@@ -1045,6 +1087,15 @@ class Pane_Toolbox(tk.Frame):
             command=self.specbar_update_est_noise_levels,
             font=(None, 15),
         )
+        self.checkbox_e_to_r_lines = tk.Checkbutton(
+            self,
+            text="eqmt_to_rcvr_lines",
+            variable=self.parent.func_vars.e_to_r_lines_bool,
+            onvalue=True,
+            offvalue=False,
+            command=self.draw_eqmt_to_rcvr_lines,
+            font=(None, 15),
+        )
         self.button_draw_grid = tk.Button(
             self, text="Draw Grid", command=self.draw_grid, font=(None, 15)
         )
@@ -1058,25 +1109,27 @@ class Pane_Toolbox(tk.Frame):
             font=(None, 15),
         )
 
-        self.button_set_image_scale.grid(       row=0, column=0, sticky=tk.N + tk.W)
-        self.button_measure.grid(               row=1, column=0, sticky=tk.N + tk.W)
-        self.button_draw_equipment.grid(        row=0, column=1, sticky=tk.N + tk.W)
-        self.button_draw_receiver.grid(         row=1, column=1, sticky=tk.N + tk.W)
-        self.button_draw_barrier.grid(          row=2, column=1, sticky=tk.N + tk.W)
-        self.checkbox_quickdraw.grid(           row=3, column=1, sticky=tk.N + tk.W)
-        self.checkbox_specific_barrier.grid(    row=4, column=1, sticky=tk.N + tk.W)
-        self.button_draw_grid.grid(             row=0, column=2, sticky=tk.N + tk.W)
-        self.button_update_grid.grid(           row=1, column=2, sticky=tk.N + tk.W)
-        self.button_export_bar_file.grid(       row=2, column=2, sticky=tk.N + tk.W)
+        self.button_set_image_scale.grid(row=0, column=0, sticky=tk.N + tk.W)
+        self.button_measure.grid(row=1, column=0, sticky=tk.N + tk.W)
+        self.button_draw_equipment.grid(row=0, column=1, sticky=tk.N + tk.W)
+        self.button_draw_receiver.grid(row=1, column=1, sticky=tk.N + tk.W)
+        self.button_draw_barrier.grid(row=2, column=1, sticky=tk.N + tk.W)
+        self.checkbox_quickdraw.grid(row=3, column=1, sticky=tk.N + tk.W)
+        self.checkbox_specific_barrier.grid(row=4, column=1, sticky=tk.N + tk.W)
+        self.checkbox_e_to_r_lines.grid(row=5, column=1, sticky=tk.N + tk.W)
+        self.button_draw_grid.grid(row=0, column=2, sticky=tk.N + tk.W)
+        self.button_update_grid.grid(row=1, column=2, sticky=tk.N + tk.W)
+        self.button_export_bar_file.grid(row=2, column=2, sticky=tk.N + tk.W)
 
     def specbar_update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
 
-
     def export_bar_file(self):
         with open("bar_export_list.csv", mode="w", newline="") as csvfile:
-            csv_writer = csv.writer(csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer = csv.writer(
+                csvfile, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
             for barrier_item in self.parent.pane_eqmt_info.barrierListForExcelOutput:
                 print(barrier_item)
                 csv_writer.writerow(barrier_item)
@@ -1084,10 +1137,49 @@ class Pane_Toolbox(tk.Frame):
             self.parent.pane_eqmt_info.barrierListForExcelOutput[1:]
         )
 
+    def draw_eqmt_to_rcvr_lines(self):
+        for line in self.parent.editor.e_to_r_lines:
+            self.parent.editor.canvas.delete(line)
+        self.parent.editor.e_to_r_lines.clear()
+
+        if not self.parent.pane_eqmt_info.current_receiver:
+            return
+        this_r_name = self.parent.pane_eqmt_info.current_receiver[0]
+        canvas_rcvr = self.parent.editor.canvas.find_withtag(this_r_name)
+
+        for rcvr_index, rcvr in enumerate(self.parent.func_vars.receiver_list):
+            if this_r_name != rcvr.r_name:
+                continue
+            for eqmt_index, eqmt in enumerate(self.parent.func_vars.equipment_list):
+                if self.parent.func_vars.ignore_matrix[eqmt_index][rcvr_index] != None:
+                    continue
+                canvas_eqmt = self.parent.editor.canvas.find_withtag(eqmt.eqmt_tag)
+                coords = self.parent.editor.canvas.bbox(canvas_rcvr[0])
+                center_x = (coords[0] + coords[2]) / 2
+                center_y = (coords[1] + coords[3]) / 2
+                r_coords = center_x, center_y
+
+                coords = self.parent.editor.canvas.bbox(canvas_eqmt[0])
+                center_x = (coords[0] + coords[2]) / 2
+                center_y = (coords[1] + coords[3]) / 2
+                e_coords = center_x, center_y
+
+                self.parent.editor.e_to_r_lines.append(
+                    self.parent.editor.canvas.create_line(
+                        r_coords, e_coords, fill="yellow", width=2
+                    )
+                )
+
     def draw_grid(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_grid_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_grid_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease)
+        self.parent.editor.canvas.bind(
+            "<ButtonPress-1>", self.parent.editor.drawing_grid_leftMouseClick
+        )
+        self.parent.editor.canvas.bind(
+            "<B1-Motion>", self.parent.editor.drawing_grid_leftMouseMove
+        )
+        self.parent.editor.canvas.bind(
+            "<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease
+        )
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Drawing Grid")
         self.parent.pane_eqmt_info.entryBox1.delete(0, "end")
@@ -1281,9 +1373,15 @@ class Pane_Toolbox(tk.Frame):
             )
 
     def set_scale(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease)
+        self.parent.editor.canvas.bind(
+            "<ButtonPress-1>", self.parent.editor.setting_scale_leftMouseClick
+        )
+        self.parent.editor.canvas.bind(
+            "<B1-Motion>", self.parent.editor.setting_scale_leftMouseMove
+        )
+        self.parent.editor.canvas.bind(
+            "<ButtonRelease-1>", self.parent.editor.setting_scale_leftMouseRelease
+        )
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Setting Scale")
         self.parent.pane_eqmt_info.entryBox1.delete(0, "end")
@@ -1291,29 +1389,60 @@ class Pane_Toolbox(tk.Frame):
         self.parent.pane_eqmt_info.entryBox1.focus()
 
     def draw_equipment(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease)
+        self.parent.editor.canvas.bind(
+            "<ButtonPress-1>", self.parent.editor.drawing_eqmt_leftMouseClick
+        )
+        self.parent.editor.canvas.bind(
+            "<B1-Motion>", self.parent.editor.drawing_eqmt_leftMouseMove
+        )
+        self.parent.editor.canvas.bind(
+            "<ButtonRelease-1>", self.parent.editor.drawing_eqmt_leftMouseRelease
+        )
 
-        self.parent.pane_eqmt_info.status_label.configure( text="Status: Drawing Equipment")
+        self.parent.pane_eqmt_info.status_label.configure(
+            text="Status: Drawing Equipment"
+        )
 
     def draw_receiver(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease)
-        self.parent.pane_eqmt_info.status_label.configure( text="Status: Drawing Receiver")
+        self.parent.editor.canvas.bind(
+            "<ButtonPress-1>", self.parent.editor.drawing_rcvr_leftMouseClick
+        )
+        self.parent.editor.canvas.bind(
+            "<B1-Motion>", self.parent.editor.drawing_rcvr_leftMouseMove
+        )
+        self.parent.editor.canvas.bind(
+            "<ButtonRelease-1>", self.parent.editor.drawing_rcvr_leftMouseRelease
+        )
+        self.parent.pane_eqmt_info.status_label.configure(
+            text="Status: Drawing Receiver"
+        )
 
     def draw_barrier(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.drawing_barrier_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.drawing_barrier_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.drawing_barrier_leftMouseRelease)
-        self.parent.pane_eqmt_info.status_label.configure( text="Status: Drawing Barrier")
+        self.parent.editor.canvas.bind(
+            "<ButtonPress-1>", self.parent.editor.drawing_barrier_leftMouseClick
+        )
+        self.parent.editor.canvas.bind(
+            "<B1-Motion>", self.parent.editor.drawing_barrier_leftMouseMove
+        )
+        self.parent.editor.canvas.bind(
+            "<ButtonRelease-1>", self.parent.editor.drawing_barrier_leftMouseRelease
+        )
+        self.parent.pane_eqmt_info.status_label.configure(
+            text="Status: Drawing Barrier"
+        )
 
     def measure(self):
-        self.parent.editor.canvas.bind( "<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick)
-        self.parent.editor.canvas.bind( "<B1-Motion>", self.parent.editor.measureing_leftMouseMove)
-        self.parent.editor.canvas.bind( "<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease)
+        self.parent.editor.canvas.bind(
+            "<ButtonPress-1>", self.parent.editor.measureing_leftMouseClick
+        )
+        self.parent.editor.canvas.bind(
+            "<B1-Motion>", self.parent.editor.measureing_leftMouseMove
+        )
+        self.parent.editor.canvas.bind(
+            "<ButtonRelease-1>", self.parent.editor.measureing_leftMouseRelease
+        )
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Measuring")
+
 
 class Pane_Eqmt_Info(tk.Frame):
     def __init__(self, parent):
@@ -1349,14 +1478,22 @@ class Pane_Eqmt_Info(tk.Frame):
             relief="solid",
             font=(None, 15),
         )
-        self.status_label = tk.Label( self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15))
-        self.measurement_label = tk.Label( self, text="Measurement: ", borderwidth=2, relief="solid", font=(None, 15))
-        self.equipment_list_label = tk.Label( self, text="Equipment", font=(None, 15))
-        self.receiver_list_label = tk.Label( self, text="Receivers", font=(None, 15))
+        self.status_label = tk.Label(
+            self, text="Status: Idle", borderwidth=2, relief="solid", font=(None, 15)
+        )
+        self.measurement_label = tk.Label(
+            self, text="Measurement: ", borderwidth=2, relief="solid", font=(None, 15)
+        )
+        self.equipment_list_label = tk.Label(self, text="Equipment", font=(None, 15))
+        self.receiver_list_label = tk.Label(self, text="Receivers", font=(None, 15))
         self.barrier_list_label = tk.Label(self, text="Barriers", font=(None, 15))
-        self.ignore_matrix_label = tk.Label( self, text="Ignore", font=(None, 15))
-        self.directivity_matrix_label = tk.Label( self, text="Directivity", font=(None, 15))
-        self.specific_bar_matrix_label = tk.Label(self, text="Specific Barrier", font=(None, 15))
+        self.ignore_matrix_label = tk.Label(self, text="Ignore", font=(None, 15))
+        self.directivity_matrix_label = tk.Label(
+            self, text="Directivity", font=(None, 15)
+        )
+        self.specific_bar_matrix_label = tk.Label(
+            self, text="Specific Barrier", font=(None, 15)
+        )
         self.generateEqmtTree()
         self.generateRcvrTree()
         self.generateBarrierTree()
@@ -1369,26 +1506,48 @@ class Pane_Eqmt_Info(tk.Frame):
         self.barrier_tree.bind("<Double-1>", self.open_item_editor_window)
         self.deselect_item_from_trees()
 
-        self.entryBox1.grid(                row=0, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
-        self.exportList_button.grid(        row=1, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
-        self.scaleIndicatorLabel.grid(      row=2, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
-        self.status_label.grid(             row=3, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
-        self.measurement_label.grid(        row=4, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.entryBox1.grid(row=0, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.exportList_button.grid(row=1, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.scaleIndicatorLabel.grid(
+            row=2, column=0, padx=0, pady=0, sticky=tk.N + tk.W
+        )
+        self.status_label.grid(row=3, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.measurement_label.grid(row=4, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
 
-        self.equipment_list_label.grid(     row=5, column=0, padx=0, pady=10, sticky=tk.N + tk.W)
-        self.equipment_tree.grid(           row=6, column=0, padx=0, pady=0, columnspan=3, sticky=tk.N + tk.W)
+        self.equipment_list_label.grid(
+            row=5, column=0, padx=0, pady=10, sticky=tk.N + tk.W
+        )
+        self.equipment_tree.grid(
+            row=6, column=0, padx=0, pady=0, columnspan=3, sticky=tk.N + tk.W
+        )
 
-        self.receiver_list_label.grid(      row=7, column=0, padx=0, pady=10, sticky=tk.N + tk.W)
-        self.receiver_tree.grid(            row=8, column=0, padx=0, pady=0,  sticky=tk.N + tk.W)
-        self.ignore_matrix_label.grid(      row=7, column=1, padx=0, pady=10,  sticky=tk.N + tk.W)
-        self.ignore_matrix_tree.grid(       row=8, column=1, padx=10, pady=0, sticky=tk.N + tk.W)
+        self.receiver_list_label.grid(
+            row=7, column=0, padx=0, pady=10, sticky=tk.N + tk.W
+        )
+        self.receiver_tree.grid(row=8, column=0, padx=0, pady=0, sticky=tk.N + tk.W)
+        self.ignore_matrix_label.grid(
+            row=7, column=1, padx=0, pady=10, sticky=tk.N + tk.W
+        )
+        self.ignore_matrix_tree.grid(
+            row=8, column=1, padx=10, pady=0, sticky=tk.N + tk.W
+        )
 
-        self.barrier_list_label.grid(       row=9, column=0, padx=10, pady=10, sticky=tk.N + tk.W)
-        self.barrier_tree.grid(             row=10, column=0,padx=10, pady=0, sticky=tk.N + tk.W)
-        self.directivity_matrix_label.grid( row=9, column=1, padx=10, pady=10, sticky=tk.N + tk.W)
-        self.directivity_matrix_tree.grid(  row=10, column=1, padx=10, pady=0, sticky=tk.N + tk.W)
-        self.specific_bar_matrix_label.grid( row=9, column=2, padx=10, pady=10, sticky=tk.N + tk.W)
-        self.specific_bar_matrix_tree.grid( row=10, column=2, padx=10, pady=0, sticky=tk.N + tk.W)
+        self.barrier_list_label.grid(
+            row=9, column=0, padx=10, pady=10, sticky=tk.N + tk.W
+        )
+        self.barrier_tree.grid(row=10, column=0, padx=10, pady=0, sticky=tk.N + tk.W)
+        self.directivity_matrix_label.grid(
+            row=9, column=1, padx=10, pady=10, sticky=tk.N + tk.W
+        )
+        self.directivity_matrix_tree.grid(
+            row=10, column=1, padx=10, pady=0, sticky=tk.N + tk.W
+        )
+        self.specific_bar_matrix_label.grid(
+            row=9, column=2, padx=10, pady=10, sticky=tk.N + tk.W
+        )
+        self.specific_bar_matrix_tree.grid(
+            row=10, column=2, padx=10, pady=0, sticky=tk.N + tk.W
+        )
 
     def generateEqmtTree(self):
         try:  # delete tree if already exists
@@ -1556,12 +1715,16 @@ class Pane_Eqmt_Info(tk.Frame):
                 self.maxWidths[col_idx] = maxWidth
 
             # initializing receiver tree
-            self.receiver_tree = tk.ttk.Treeview( self, columns=self.receiver_tree_columns, show="headings")
+            self.receiver_tree = tk.ttk.Treeview(
+                self, columns=self.receiver_tree_columns, show="headings"
+            )
 
             # adding columns and rows
             for col, maxWidth in zip(self.receiver_tree_columns, self.maxWidths):
                 self.receiver_tree.heading(col, text=col)
-                self.receiver_tree.column( col, minwidth=15, width=maxWidth + 25, stretch=0)
+                self.receiver_tree.column(
+                    col, minwidth=15, width=maxWidth + 25, stretch=0
+                )
             for i, value in enumerate(self.receiver_tree_rows):
                 self.receiver_tree.insert("", "end", values=value, tags=self.myFont)
 
@@ -1676,9 +1839,13 @@ class Pane_Eqmt_Info(tk.Frame):
         for i, col in enumerate(self.ignore_matrix_tree_columns):
             self.ignore_matrix_tree.heading(col, text=col)
             if i == 0:
-                self.ignore_matrix_tree.column( col, minwidth=5, width=maxWidth + 85, stretch=0)
+                self.ignore_matrix_tree.column(
+                    col, minwidth=5, width=maxWidth + 85, stretch=0
+                )
             else:
-                self.ignore_matrix_tree.column( col, minwidth=5, width=maxWidth + 5, stretch=0)
+                self.ignore_matrix_tree.column(
+                    col, minwidth=5, width=maxWidth + 5, stretch=0
+                )
 
         for i, row in enumerate(self.ignore_matrix_tree_rows):
             txt = [x if x != None else "_" for x in row]
@@ -1691,7 +1858,8 @@ class Pane_Eqmt_Info(tk.Frame):
             self.dir_matrix_tree_columns.append(str(rcvr.r_name))
         self.dir_matrix_tree_rows = []
         for eqmt, dir_list in zip(
-            self.parent.func_vars.equipment_list, self.parent.func_vars.directivity_matrix
+            self.parent.func_vars.equipment_list,
+            self.parent.func_vars.directivity_matrix,
         ):
             self.dir_matrix_tree_rows.append([eqmt.eqmt_tag] + dir_list.copy())
         self.maxWidths = []
@@ -1718,9 +1886,13 @@ class Pane_Eqmt_Info(tk.Frame):
         for i, col in enumerate(self.dir_matrix_tree_columns):
             self.directivity_matrix_tree.heading(col, text=col)
             if i == 0:
-                self.directivity_matrix_tree.column( col, minwidth=25, width=maxWidth + 85, stretch=0)
+                self.directivity_matrix_tree.column(
+                    col, minwidth=25, width=maxWidth + 85, stretch=0
+                )
             else:
-                self.directivity_matrix_tree.column( col, minwidth=25, width=maxWidth + 5, stretch=0)
+                self.directivity_matrix_tree.column(
+                    col, minwidth=25, width=maxWidth + 5, stretch=0
+                )
 
         for i, row in enumerate(self.dir_matrix_tree_rows):
             txt = [x if x != 0 else "_" for x in row]
@@ -1733,7 +1905,8 @@ class Pane_Eqmt_Info(tk.Frame):
             self.specbar_matrix_tree_columns.append(str(rcvr.r_name))
         self.specbar_matrix_tree_rows = []
         for eqmt, dir_list in zip(
-            self.parent.func_vars.equipment_list, self.parent.func_vars.specific_bar_matrix
+            self.parent.func_vars.equipment_list,
+            self.parent.func_vars.specific_bar_matrix,
         ):
             self.specbar_matrix_tree_rows.append([eqmt.eqmt_tag] + dir_list.copy())
         self.maxWidths = []
@@ -1760,13 +1933,19 @@ class Pane_Eqmt_Info(tk.Frame):
         for i, col in enumerate(self.specbar_matrix_tree_columns):
             self.specific_bar_matrix_tree.heading(col, text=col)
             if i == 0:
-                self.specific_bar_matrix_tree.column( col, minwidth=25, width=maxWidth + 85, stretch=0)
+                self.specific_bar_matrix_tree.column(
+                    col, minwidth=25, width=maxWidth + 85, stretch=0
+                )
             else:
-                self.specific_bar_matrix_tree.column( col, minwidth=25, width=maxWidth + 5, stretch=0)
+                self.specific_bar_matrix_tree.column(
+                    col, minwidth=25, width=maxWidth + 5, stretch=0
+                )
 
         for i, row in enumerate(self.specbar_matrix_tree_rows):
             txt = [x if x is not None else "_" for x in row]
-            self.specific_bar_matrix_tree.insert("", "end", values=txt, tags=self.myFont)
+            self.specific_bar_matrix_tree.insert(
+                "", "end", values=txt, tags=self.myFont
+            )
 
     def ARI_interpolation(self, pld, lowerIL, upperIL, lowerPLD, upperPLD):
         diff_in_reduction = (pld - lowerPLD) / (upperPLD - lowerPLD)
@@ -2084,7 +2263,9 @@ class Pane_Eqmt_Info(tk.Frame):
         if len(all_bars) != len(self.parent.func_vars.barrier_list):
             e = self.parent.func_vars.equipment_list[e_idx].eqmt_tag
             r = self.parent.func_vars.receiver_list[r_idx].r_name
-            raise NameError(f'this spec\'d bar doesn\'t exist: {all_bars - real_bars} shown for {e}, {r}')
+            raise NameError(
+                f"this spec'd bar doesn't exist: {all_bars - real_bars} shown for {e}, {r}"
+            )
         if b.barrier_name not in bar_mat_cur_line:
             return False
         return True
@@ -2133,16 +2314,25 @@ class Pane_Eqmt_Info(tk.Frame):
                         + (rcvr.z_coord - eqmt.z_coord) ** 2
                     )
                     try:
-                        directivity_loss = self.parent.func_vars.directivity_matrix[eqmt_index][rcvr_index]
+                        directivity_loss = self.parent.func_vars.directivity_matrix[
+                            eqmt_index
+                        ][rcvr_index]
                         q = eqmt.installed_q
                         r = distance * 0.308
                         attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
                         used_barrier_name = None
                         barrier_IL = 0
-                        if ( TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False):
+                        if (
+                            TAKE_ARI_BARRIER == True
+                            and TAKE_OB_FRESNAL_BARRIER == False
+                        ):
                             for bar in self.parent.func_vars.barrier_list:
-                                if self.parent.func_vars.use_specific_bar_bool.get() is True \
-                                    and self.spec_bar_check(bar, eqmt_index, rcvr_index) is False:
+                                if (
+                                    self.parent.func_vars.use_specific_bar_bool.get()
+                                    is True
+                                    and self.spec_bar_check(bar, eqmt_index, rcvr_index)
+                                    is False
+                                ):
                                     continue
                                 barrier_info_list = self.ARI_barrier_IL_calc(
                                     eqmt.x_coord,
@@ -2199,8 +2389,12 @@ class Pane_Eqmt_Info(tk.Frame):
                             TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True
                         ):
                             for bar in self.parent.func_vars.barrier_list:
-                                if self.parent.func_vars.use_specific_bar_bool.get() is True \
-                                    and self.spec_bar_check(bar, eqmt_index, rcvr_index) is False:
+                                if (
+                                    self.parent.func_vars.use_specific_bar_bool.get()
+                                    is True
+                                    and self.spec_bar_check(bar, eqmt_index, rcvr_index)
+                                    is False
+                                ):
                                     continue
                                 if None not in [
                                     eqmt.hz63,
@@ -2305,7 +2499,11 @@ class Pane_Eqmt_Info(tk.Frame):
                         barrierListForExcelOutput_curData = []
                         # print(eqmt.eqmt_tag, " - ", barrier_IL, int(barrier_IL), int(round(barrier_IL, 0)))
                         spl = (
-                            sound_power - eqmt.insertion_loss - attenuation - barrier_IL - directivity_loss
+                            sound_power
+                            - eqmt.insertion_loss
+                            - attenuation
+                            - barrier_IL
+                            - directivity_loss
                         )
                         # if barriermethod == ' - OB_fresnel':
                         print(
@@ -2343,6 +2541,12 @@ class Pane_Eqmt_Info(tk.Frame):
         self.focused_tree_children = self.receiver_tree.get_children()
         self.focused_line = self.receiver_tree.focus()
         self.current_receiver = self.receiver_tree.item(self.focused_line)["values"]
+        if self.parent.func_vars.e_to_r_lines_bool.get():
+            self.parent.pane_toolbox.draw_eqmt_to_rcvr_lines()
+        else:
+            for line in self.parent.editor.e_to_r_lines:
+                self.parent.editor.canvas.delete(line)
+            self.parent.editor.e_to_r_lines.clear()
         print(self.current_receiver)
 
     def select_item_from_barrier_tree(self, event):
@@ -2367,7 +2571,9 @@ class Pane_Eqmt_Info(tk.Frame):
             for row in ws.iter_rows(max_row=100):
                 if row[EQMT_NAME_COL].value == None:
                     break
-                if row[EQMT_NAME_COL].value.replace(" ", "-") == obj.eqmt_tag.replace(" ", "-"):
+                if row[EQMT_NAME_COL].value.replace(" ", "-") == obj.eqmt_tag.replace(
+                    " ", "-"
+                ):
                     row[EQMT_X_COORD_COL].value = obj.x_coord
                     row[EQMT_Y_COORD_COL].value = obj.y_coord
 
@@ -2376,7 +2582,9 @@ class Pane_Eqmt_Info(tk.Frame):
             for row in ws.iter_rows():
                 if row[RCVR_NAME_COL].value == None:
                     break
-                if row[RCVR_NAME_COL].value.replace(" ", "-") == obj.r_name.replace(" ", "-"):
+                if row[RCVR_NAME_COL].value.replace(" ", "-") == obj.r_name.replace(
+                    " ", "-"
+                ):
                     row[RCVR_X_COORD_COL].value = obj.x_coord
                     row[RCVR_Y_COORD_COL].value = obj.y_coord
 
@@ -2384,9 +2592,9 @@ class Pane_Eqmt_Info(tk.Frame):
             for row in ws.iter_rows(min_row=BAR_START_ROW, max_row=100):
                 if row[BAR_NAME_COL].value == None:
                     break
-                if row[BAR_NAME_COL].value.replace(" ", "-") == obj.barrier_name.replace(
+                if row[BAR_NAME_COL].value.replace(
                     " ", "-"
-                ):
+                ) == obj.barrier_name.replace(" ", "-"):
                     row[BAR_X0_COORD_COL].value = obj.x0_coord
                     row[BAR_Y0_COORD_COL].value = obj.y0_coord
                     row[BAR_Z0_COORD_COL].value = obj.z0_coord
@@ -2409,14 +2617,14 @@ class Pane_Eqmt_Info(tk.Frame):
 
         # saving scale
         """ using the cell reference doesn't work...."""
-        #KNOWN_DISTANCE_FT_CELL.value = self.parent.func_vars.known_distance_ft
-        #CALE_LINE_DISTANCE_PX_CELL.value = self.parent.func_vars.scale_line_distance_px
+        # KNOWN_DISTANCE_FT_CELL.value = self.parent.func_vars.known_distance_ft
+        # CALE_LINE_DISTANCE_PX_CELL.value = self.parent.func_vars.scale_line_distance_px
         ws["AE20"] = self.parent.func_vars.known_distance_ft
         ws["AF20"] = self.parent.func_vars.scale_line_distance_px
 
         # save spec bar bool
         """ using the cell reference doesn't work...."""
-        #USE_SPECIFIC_BAR_BOOL_CELL.value = self.parent.func_vars.use_specific_bar_bool.get()
+        # USE_SPECIFIC_BAR_BOOL_CELL.value = self.parent.func_vars.use_specific_bar_bool.get()
         ws["AC19"] = self.parent.func_vars.use_specific_bar_bool.get()
 
         print("saving")
@@ -2586,64 +2794,50 @@ class Pane_Eqmt_Info(tk.Frame):
             )
 
             self.count_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
-            self.eqmt_tag_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
+            self.eqmt_tag_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
             self.path_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
             self.make_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
             self.model_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
-            self.sound_level_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
+            self.sound_level_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
             self.sound_ref_dist_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.tested_q_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.installed_q_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
+            self.tested_q_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.installed_q_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
             self.insertion_loss_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.x_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.y_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.z_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
+            self.x_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.y_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.z_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
 
-            self.count_label.grid(          row=0, column=0, sticky=tk.N + tk.W)
-            self.eqmt_tag_label.grid(       row=1, column=0, sticky=tk.N + tk.W)
-            self.path_label.grid(           row=2, column=0, sticky=tk.N + tk.W)
-            self.make_label.grid(           row=3, column=0, sticky=tk.N + tk.W)
-            self.model_label.grid(          row=4, column=0, sticky=tk.N + tk.W)
-            self.sound_level_label.grid(    row=5, column=0, sticky=tk.N + tk.W)
-            self.sound_ref_dist_label.grid( row=6, column=0, sticky=tk.N + tk.W)
-            self.tested_q_label.grid(       row=7, column=0, sticky=tk.N + tk.W)
-            self.installed_q_label.grid(    row=8, column=0, sticky=tk.N + tk.W)
-            self.insertion_loss_label.grid( row=9, column=0, sticky=tk.N + tk.W)
-            self.x_coord_label.grid(        row=10, column=0, sticky=tk.N + tk.W)
-            self.y_coord_label.grid(        row=11, column=0, sticky=tk.N + tk.W)
-            self.z_coord_label.grid(        row=12, column=0, sticky=tk.N + tk.W)
+            self.count_label.grid(row=0, column=0, sticky=tk.N + tk.W)
+            self.eqmt_tag_label.grid(row=1, column=0, sticky=tk.N + tk.W)
+            self.path_label.grid(row=2, column=0, sticky=tk.N + tk.W)
+            self.make_label.grid(row=3, column=0, sticky=tk.N + tk.W)
+            self.model_label.grid(row=4, column=0, sticky=tk.N + tk.W)
+            self.sound_level_label.grid(row=5, column=0, sticky=tk.N + tk.W)
+            self.sound_ref_dist_label.grid(row=6, column=0, sticky=tk.N + tk.W)
+            self.tested_q_label.grid(row=7, column=0, sticky=tk.N + tk.W)
+            self.installed_q_label.grid(row=8, column=0, sticky=tk.N + tk.W)
+            self.insertion_loss_label.grid(row=9, column=0, sticky=tk.N + tk.W)
+            self.x_coord_label.grid(row=10, column=0, sticky=tk.N + tk.W)
+            self.y_coord_label.grid(row=11, column=0, sticky=tk.N + tk.W)
+            self.z_coord_label.grid(row=12, column=0, sticky=tk.N + tk.W)
 
-            self.count_input.grid(          row=0, column=1, sticky=tk.N + tk.W)
-            self.eqmt_tag_input.grid(       row=1, column=1, sticky=tk.N + tk.W)
-            self.path_input.grid(           row=2, column=1, sticky=tk.N + tk.W)
-            self.make_input.grid(           row=3, column=1, sticky=tk.N + tk.W)
-            self.model_input.grid(          row=4, column=1, sticky=tk.N + tk.W)
-            self.sound_level_input.grid(    row=5, column=1, sticky=tk.N + tk.W)
-            self.sound_ref_dist_input.grid( row=6, column=1, sticky=tk.N + tk.W)
-            self.tested_q_input.grid(       row=7, column=1, sticky=tk.N + tk.W)
-            self.installed_q_input.grid(    row=8, column=1, sticky=tk.N + tk.W)
-            self.insertion_loss_input.grid( row=9, column=1, sticky=tk.N + tk.W)
-            self.x_coord_input.grid(        row=10, column=1, sticky=tk.N + tk.W)
-            self.y_coord_input.grid(        row=11, column=1, sticky=tk.N + tk.W)
-            self.z_coord_input.grid(        row=12, column=1, sticky=tk.N + tk.W)
+            self.count_input.grid(row=0, column=1, sticky=tk.N + tk.W)
+            self.eqmt_tag_input.grid(row=1, column=1, sticky=tk.N + tk.W)
+            self.path_input.grid(row=2, column=1, sticky=tk.N + tk.W)
+            self.make_input.grid(row=3, column=1, sticky=tk.N + tk.W)
+            self.model_input.grid(row=4, column=1, sticky=tk.N + tk.W)
+            self.sound_level_input.grid(row=5, column=1, sticky=tk.N + tk.W)
+            self.sound_ref_dist_input.grid(row=6, column=1, sticky=tk.N + tk.W)
+            self.tested_q_input.grid(row=7, column=1, sticky=tk.N + tk.W)
+            self.installed_q_input.grid(row=8, column=1, sticky=tk.N + tk.W)
+            self.insertion_loss_input.grid(row=9, column=1, sticky=tk.N + tk.W)
+            self.x_coord_input.grid(row=10, column=1, sticky=tk.N + tk.W)
+            self.y_coord_input.grid(row=11, column=1, sticky=tk.N + tk.W)
+            self.z_coord_input.grid(row=12, column=1, sticky=tk.N + tk.W)
 
             self.count_input.insert(0, self.current_obj.count)
             self.eqmt_tag_input.insert(0, self.current_obj.eqmt_tag)
@@ -2683,29 +2877,21 @@ class Pane_Eqmt_Info(tk.Frame):
             )
 
             self.r_name_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
-            self.x_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.y_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.z_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.sound_limit_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
+            self.x_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.y_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.z_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.sound_limit_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
 
-            self.r_name_label.grid(     row=0, column=0, sticky=tk.N + tk.W)
-            self.x_coord_label.grid(    row=1, column=0, sticky=tk.N + tk.W)
-            self.y_coord_label.grid(    row=2, column=0, sticky=tk.N + tk.W)
-            self.z_coord_label.grid(    row=3, column=0, sticky=tk.N + tk.W)
+            self.r_name_label.grid(row=0, column=0, sticky=tk.N + tk.W)
+            self.x_coord_label.grid(row=1, column=0, sticky=tk.N + tk.W)
+            self.y_coord_label.grid(row=2, column=0, sticky=tk.N + tk.W)
+            self.z_coord_label.grid(row=3, column=0, sticky=tk.N + tk.W)
             self.sound_limit_label.grid(row=4, column=0, sticky=tk.N + tk.W)
 
-            self.r_name_input.grid(     row=0, column=1, sticky=tk.N + tk.W)
-            self.x_coord_input.grid(    row=1, column=1, sticky=tk.N + tk.W)
-            self.y_coord_input.grid(    row=2, column=1, sticky=tk.N + tk.W)
-            self.z_coord_input.grid(    row=3, column=1, sticky=tk.N + tk.W)
+            self.r_name_input.grid(row=0, column=1, sticky=tk.N + tk.W)
+            self.x_coord_input.grid(row=1, column=1, sticky=tk.N + tk.W)
+            self.y_coord_input.grid(row=2, column=1, sticky=tk.N + tk.W)
+            self.z_coord_input.grid(row=3, column=1, sticky=tk.N + tk.W)
             self.sound_limit_input.grid(row=4, column=1, sticky=tk.N + tk.W)
 
             self.r_name_input.insert(0, self.current_obj.r_name)
@@ -2746,24 +2932,12 @@ class Pane_Eqmt_Info(tk.Frame):
             self.barrier_name_input = tk.Entry(
                 self.newWindow, font=(None, 15), width=24
             )
-            self.x0_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.y0_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.z0_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.x1_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.y1_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
-            self.z1_coord_input = tk.Entry(
-                self.newWindow, font=(None, 15), width=24
-            )
+            self.x0_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.y0_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.z0_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.x1_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.y1_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
+            self.z1_coord_input = tk.Entry(self.newWindow, font=(None, 15), width=24)
 
             self.barrier_name_label.grid(row=0, column=0, sticky=tk.N + tk.W)
             self.x0_coord_label.grid(row=1, column=0, sticky=tk.N + tk.W)
@@ -2809,7 +2983,7 @@ class Main_Application(tk.Frame):
         self.pane_eqmt_info = Pane_Eqmt_Info(self)
 
         self.editor.grid(row=0, rowspan=2, column=0, stick=tk.N)
-        self.pane_toolbox.grid( row=0, column=1, padx=20, pady=20, stick=tk.N + tk.W)
+        self.pane_toolbox.grid(row=0, column=1, padx=20, pady=20, stick=tk.N + tk.W)
         self.pane_eqmt_info.grid(row=1, column=1, padx=20, pady=20, stick=tk.N)
 
 
