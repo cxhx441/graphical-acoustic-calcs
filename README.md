@@ -8,5 +8,5 @@ One of my first larger-scale projects that inspired my interest in computer scie
 An update to this project is underway and can be found [here](https://github.com/cxhx441/acoustic_prediction_3d)
 
 <img src="pl_acoustics_original_left.png" width="500">
-<img src="pl_acoustics_original_right.png" width="500"> </br>
+<img src="pl_acoustics_original_right.png" width="500">
 <img src="pl_acoustics_barrier_geometry.png" width="500">
