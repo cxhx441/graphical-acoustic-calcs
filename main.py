@@ -337,6 +337,7 @@ class FuncVars(object):
             obj.x_coord = round(obj.x_coord, 2)
             obj.y_coord = round(obj.y_coord, 2)
 
+        """rescaling rcvrs"""
         for obj in self.receiver_list:
             obj.x_coord /= self.old_master_scale
             obj.y_coord /= self.old_master_scale
@@ -344,11 +345,26 @@ class FuncVars(object):
             obj.y_coord *= self.master_scale
             obj.x_coord = round(obj.x_coord, 2)
             obj.y_coord = round(obj.y_coord, 2)
-        """rescaling eqmt"""
+
+        """rescaling bars"""
+        for obj in self.barrier_list:
+            obj.x0_coord /= self.old_master_scale
+            obj.y0_coord /= self.old_master_scale
+            obj.x1_coord /= self.old_master_scale
+            obj.y1_coord /= self.old_master_scale
+            obj.x0_coord *= self.master_scale
+            obj.y0_coord *= self.master_scale
+            obj.x1_coord *= self.master_scale
+            obj.y1_coord *= self.master_scale
+            obj.x0_coord = round(obj.x_coord, 2)
+            obj.y0_coord = round(obj.y_coord, 2)
+            obj.x1_coord = round(obj.x_coord, 2)
+            obj.y1_coord = round(obj.y_coord, 2)
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
         self.parent.pane_eqmt_info.generateEqmtTree()
+        self.parent.pane_eqmt_info.generateBarrierTree()
 
 
 class Equipment(object):
