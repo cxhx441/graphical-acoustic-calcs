@@ -1984,7 +1984,13 @@ class Pane_Eqmt_Info(tk.Frame):
         rcvr_y,
         rcvr_z,
     ):
-        # fixing escape on error with same barrier coordinate
+        # fixing escape on error with same barrier coordinate or same eqmt/receiver x/y
+        if eqmt_x == rcvr_x:
+            eqmt_x += 0.0001
+            print("corrected eqmt_x==rcvr_x error")
+        if eqmt_y == rcvr_y:
+            eqmt_y += 0.0001
+            print("corrected eqmt_y==rcvr_y error")
         if bar_x0 == bar_x1:
             bar_x0 += 0.0001
             print("corrected bar_x0==bar_x1 error")
