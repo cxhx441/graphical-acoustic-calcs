@@ -356,10 +356,10 @@ class FuncVars(object):
             obj.y0_coord *= self.master_scale
             obj.x1_coord *= self.master_scale
             obj.y1_coord *= self.master_scale
-            obj.x0_coord = round(obj.x_coord, 2)
-            obj.y0_coord = round(obj.y_coord, 2)
-            obj.x1_coord = round(obj.x_coord, 2)
-            obj.y1_coord = round(obj.y_coord, 2)
+            obj.x0_coord = round(obj.x0_coord, 2)
+            obj.y0_coord = round(obj.y0_coord, 2)
+            obj.x1_coord = round(obj.x1_coord, 2)
+            obj.y1_coord = round(obj.y1_coord, 2)
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_eqmt_info.generateRcvrTree()
