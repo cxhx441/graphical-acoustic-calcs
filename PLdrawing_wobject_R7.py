@@ -1393,7 +1393,7 @@ class Pane_Eqmt_Info(tkinter.Frame):
         barCalcListNum = 1
         totalEqmtCount = len(self.parent.func_vars.equipment_list)
         print(totalEqmtCount)
-        for col in range(73, 87):
+        for col in range(73, 88):
             for row in ws.iter_rows(min_row=2, max_row=2+totalEqmtCount-1):
                 print(col)
                 if barCalcListNum > len(self.barrierListForExcelOutput)-1:
