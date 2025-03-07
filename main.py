@@ -2548,8 +2548,8 @@ class Pane_Eqmt_Info(tk.Frame):
             rcvr.predicted_sound_level = round(10 * math.log10(sound_pressure), 1)
             #     print(f"predicted sound level: {rcvr.predicted_sound_level}")
             # print(f"distance: {distance}")
-            for listy in self.barrierListForExcelOutput:
-                print(listy, "/n")
+            # for listy in self.barrierListForExcelOutput:
+            #     print(listy, "/n")
 
     def select_item_from_eqmt_tree(self, event):
         self.deselect_item_from_trees()
