@@ -2585,6 +2585,7 @@ class Pane_Eqmt_Info(tk.Frame):
         self.focused_tree_children = None
 
     def onExportListButton(self):
+        print("exporting...")
         wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, keep_vba=True, data_only=False)
         ws = wb["Input LwA_XYZ"]
 
