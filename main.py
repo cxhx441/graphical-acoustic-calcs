@@ -16,7 +16,8 @@ BED_IMAGE_FILEPATH = "bed_image.png"
 XL_FILEPATH        = "Aegis San Rafael - PL - 2020.08.17.xlsm"
 XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
-DRAWING_FONT = "Helvetica 15 bold"
+DRAWING_FONT = "Helvetica 12 bold"
+BAR_IL_FONT = "Helvetica 14"
 
 TAKE_ARI_BARRIER = True
 TAKE_OB_FRESNAL_BARRIER = False
@@ -238,6 +239,13 @@ class FuncVars(object):
                 )
             )
 
+        # for eqmt_to_rcvr_shapes drawing
+        self.e_to_r_with_bar = dict()
+        for eqmt in self.equipment_list:
+            self.e_to_r_with_bar[eqmt] = dict()
+            for rcvr in self.receiver_list:
+                self.e_to_r_with_bar[eqmt][rcvr] = {"bar_obj": None, "bar_il": 0}
+
         def make_matrix(r: int, c: int, replace_none=None) -> list:
             matrix = list()
             for eqmt_row in range(len(self.equipment_list)):
@@ -318,7 +326,7 @@ class FuncVars(object):
             self.scale_line_distance_px = SCALE_LINE_DISTANCE_PX_CELL.value
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
         self.quickdraw_bool = tk.IntVar()
-        self.e_to_r_lines_bool = tk.BooleanVar()
+        self.e_to_r_shapes_bool = tk.BooleanVar()
         self.use_specific_bar_bool = tk.BooleanVar()
         self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL_CELL.value)
 
@@ -444,7 +452,7 @@ class Editor(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
-        self.e_to_r_lines = []
+        self.e_to_r_shapes = []
 
         # open image
         self.image = Image.open(BED_IMAGE_FILEPATH)
@@ -468,8 +476,8 @@ class Editor(tk.Frame):
         self.canvas_size_factor = 1
         self.canvasWidth = self.screen_width * self.canvas_size_factor
         self.canvasHeight = self.screen_height * self.canvas_size_factor
-        self.canvasWidth -= 2000  # otherwise window is off the screen on home pc
-        self.canvasHeight -= 250  # otherwise window is off the screen on home pc
+        self.canvasWidth -= 1000  # otherwise window is off the screen on home pc
+        self.canvasHeight -= 150  # otherwise window is off the screen on home pc
         self.canvas = tk.Canvas(
             self, width=self.canvasWidth, height=self.canvasHeight, cursor="cross"
         )
@@ -1061,6 +1069,7 @@ class Editor(tk.Frame):
                 obj.y1_coord = round(obj.y1_coord, 2)
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_toolbox.draw_eqmt_to_rcvr_shapes()
         self.parent.pane_eqmt_info.generateEqmtTree()
         self.parent.pane_eqmt_info.generateRcvrTree()
         self.parent.pane_eqmt_info.generateBarrierTree()
@@ -1100,16 +1109,16 @@ class Pane_Toolbox(tk.Frame):
             variable=self.parent.func_vars.use_specific_bar_bool,
             onvalue=True,
             offvalue=False,
-            command=self.specbar_update_est_noise_levels,
+            command=self.specificbar_update_est_noise_levels,
             font=(None, 15),
         )
-        self.checkbox_e_to_r_lines = tk.Checkbutton(
+        self.checkbox_e_to_r_shapes = tk.Checkbutton(
             self,
-            text="eqmt_to_rcvr_lines",
-            variable=self.parent.func_vars.e_to_r_lines_bool,
+            text="eqmt_to_rcvr_shapes",
+            variable=self.parent.func_vars.e_to_r_shapes_bool,
             onvalue=True,
             offvalue=False,
-            command=self.draw_eqmt_to_rcvr_lines,
+            command=self.draw_eqmt_to_rcvr_shapes,
             font=(None, 15),
         )
         self.button_draw_grid = tk.Button(
@@ -1132,13 +1141,14 @@ class Pane_Toolbox(tk.Frame):
         self.button_draw_barrier.grid(row=2, column=1, sticky=tk.N + tk.W)
         self.checkbox_quickdraw.grid(row=3, column=1, sticky=tk.N + tk.W)
         self.checkbox_specific_barrier.grid(row=4, column=1, sticky=tk.N + tk.W)
-        self.checkbox_e_to_r_lines.grid(row=5, column=1, sticky=tk.N + tk.W)
+        self.checkbox_e_to_r_shapes.grid(row=5, column=1, sticky=tk.N + tk.W)
         self.button_draw_grid.grid(row=0, column=2, sticky=tk.N + tk.W)
         self.button_update_grid.grid(row=1, column=2, sticky=tk.N + tk.W)
         self.button_export_bar_file.grid(row=2, column=2, sticky=tk.N + tk.W)
 
-    def specbar_update_est_noise_levels(self):
+    def specificbar_update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
+        self.parent.pane_toolbox.draw_eqmt_to_rcvr_shapes()
         self.parent.pane_eqmt_info.generateRcvrTree()
 
     def export_bar_file(self):
@@ -1153,38 +1163,103 @@ class Pane_Toolbox(tk.Frame):
             self.parent.pane_eqmt_info.barrierListForExcelOutput[1:]
         )
 
-    def draw_eqmt_to_rcvr_lines(self):
-        for line in self.parent.editor.e_to_r_lines:
-            self.parent.editor.canvas.delete(line)
-        self.parent.editor.e_to_r_lines.clear()
+    def draw_eqmt_to_rcvr_shapes(self):
+        for shape in self.parent.editor.e_to_r_shapes:
+            self.parent.editor.canvas.delete(shape)
+        self.parent.editor.e_to_r_shapes.clear()
 
         if not self.parent.pane_eqmt_info.current_receiver:
             return
+
         this_r_name = self.parent.pane_eqmt_info.current_receiver[0]
         canvas_rcvr = self.parent.editor.canvas.find_withtag(this_r_name)
 
         for rcvr_index, rcvr in enumerate(self.parent.func_vars.receiver_list):
             if this_r_name != rcvr.r_name:
                 continue
+            stnd_draw_lines = []
+            bar_draw_lines = []
+            bar_draw_txt = []
             for eqmt_index, eqmt in enumerate(self.parent.func_vars.equipment_list):
                 if self.parent.func_vars.ignore_matrix[eqmt_index][rcvr_index] != None:
                     continue
-                canvas_eqmt = self.parent.editor.canvas.find_withtag(eqmt.eqmt_tag)
-                coords = self.parent.editor.canvas.bbox(canvas_rcvr[0])
+
+                # rcvr
+                canvas_rcvr_id = canvas_rcvr[0]
+                coords = self.parent.editor.canvas.coords(canvas_rcvr_id)
                 center_x = (coords[0] + coords[2]) / 2
                 center_y = (coords[1] + coords[3]) / 2
                 r_coords = center_x, center_y
 
-                coords = self.parent.editor.canvas.bbox(canvas_eqmt[0])
+                # eqmt
+                canvas_eqmt_id = self.parent.editor.canvas.find_withtag(eqmt.eqmt_tag)[
+                    0
+                ]
+                # coords = self.parent.editor.canvas.bbox(canvas_eqmt_id)
+                coords = self.parent.editor.canvas.coords(canvas_eqmt_id)
                 center_x = (coords[0] + coords[2]) / 2
                 center_y = (coords[1] + coords[3]) / 2
                 e_coords = center_x, center_y
 
-                self.parent.editor.e_to_r_lines.append(
-                    self.parent.editor.canvas.create_line(
-                        r_coords, e_coords, fill="yellow", width=2
+                # bar
+                bar_obj = self.parent.func_vars.e_to_r_with_bar[eqmt][rcvr]["bar_obj"]
+                if not bar_obj:
+                    stnd_draw_lines.append([r_coords, e_coords])
+                else:
+                    bar_draw_lines.append([r_coords, e_coords])
+
+                    bar_il = self.parent.func_vars.e_to_r_with_bar[eqmt][rcvr]["bar_il"]
+                    canvas_bar_id = self.parent.editor.canvas.find_withtag(
+                        bar_obj.barrier_name
+                    )[0]
+                    b_coords = self.parent.editor.canvas.coords(canvas_bar_id)
+
+                    x1, y1, x2, y2 = b_coords
+                    x3, y3 = e_coords
+                    x4, y4 = r_coords
+                    denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+                    if (
+                        denom == 0
+                    ):  # Lines are parallel or collinear, should never happen here
+                        continue
+                    px = (
+                        (x1 * y2 - y1 * x2) * (x3 - x4)
+                        - (x1 - x2) * (x3 * y4 - y3 * x4)
+                    ) / denom
+                    py = (
+                        (x1 * y2 - y1 * x2) * (y3 - y4)
+                        - (y1 - y2) * (x3 * y4 - y3 * x4)
+                    ) / denom
+                    bar_draw_txt.append((px, py, bar_il))
+                    # intersection = (px, py)
+
+                for r_coords, e_coords in stnd_draw_lines:
+                    self.parent.editor.e_to_r_shapes.append(
+                        self.parent.editor.canvas.create_line(
+                            r_coords, e_coords, fill="yellow", width=1
+                        )
                     )
-                )
+                for r_coords, e_coords in bar_draw_lines:
+                    self.parent.editor.e_to_r_shapes.append(
+                        self.parent.editor.canvas.create_line(
+                            r_coords, e_coords, fill="blue", width=1
+                        )
+                    )
+                for x, y, bar_il in bar_draw_txt:
+                    self.parent.editor.e_to_r_shapes.append(
+                        self.parent.editor.canvas.create_text(
+                            x,
+                            y,
+                            text=str(int(round(bar_il, 0))),
+                            font=BAR_IL_FONT,
+                            fill="red",
+                        )
+                    )
+
+                # TODO
+                # check barriers
+                # get barrier coords
+                # markup canvas where barrier crosses path
 
     def draw_grid(self):
         self.parent.editor.canvas.bind(
@@ -2005,7 +2080,7 @@ class Pane_Eqmt_Info(tk.Frame):
         if not utils.doIntersect(
             eqmt_point, receiver_point, bar_start_point, bar_end_point
         ):
-            print("barrier fails horizontal test")
+            # print("barrier fails horizontal test")
             return 0
 
         try:
@@ -2041,7 +2116,7 @@ class Pane_Eqmt_Info(tk.Frame):
 
         # testing if line of sight is broken vertically
         if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
-            print("barrier fails easy vertical test")
+            # print("barrier fails easy vertical test")
             return 0
 
         distance_source2receiver_horizontal = utils.distance_formula(
@@ -2076,7 +2151,7 @@ class Pane_Eqmt_Info(tk.Frame):
         if not utils.doIntersect(
             eqmt_point, receiver_point, bar_start_point, bar_end_point
         ):
-            print("barrier fails vertical test")
+            # print("barrier fails vertical test")
             return 0
 
         pld = path_length_difference
@@ -2136,10 +2211,10 @@ class Pane_Eqmt_Info(tk.Frame):
         # fixing escape on error with same barrier coordinate
         if bar_x0 == bar_x1:
             bar_x0 += 0.0001
-            print("corrected bar_x0==bar_x1 error")
+            # print("corrected bar_x0==bar_x1 error")
         if bar_y0 == bar_y1:
             bar_y0 += 0.0001
-            print("corrected bar_y0==bar_y1 error")
+            # print("corrected bar_y0==bar_y1 error")
         ob_levels_list = [hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000]
         ob_bands_list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
         # testing if line of sight is broken along horizontal plane
@@ -2150,7 +2225,7 @@ class Pane_Eqmt_Info(tk.Frame):
         if not utils.doIntersect(
             eqmt_point, receiver_point, bar_start_point, bar_end_point
         ):
-            print("barrier fails horizontal test")
+            # print("barrier fails horizontal test")
             return 0
         try:
             m_source2receiver = (rcvr_y - eqmt_y) / (rcvr_x - eqmt_x)
@@ -2185,7 +2260,7 @@ class Pane_Eqmt_Info(tk.Frame):
 
         # testing if line of sight is broken vertically
         if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
-            print("barrier fails easy vertical test")
+            # print("barrier fails easy vertical test")
             return 0
 
         distance_source2receiver_horizontal = utils.distance_formula(
@@ -2220,7 +2295,7 @@ class Pane_Eqmt_Info(tk.Frame):
         if not utils.doIntersect(
             eqmt_point, receiver_point, bar_start_point, bar_end_point
         ):
-            print("barrier fails vertical test")
+            # print("barrier fails vertical test")
             return 0
 
         speed_of_sound = 1128
@@ -2343,6 +2418,7 @@ class Pane_Eqmt_Info(tk.Frame):
                         r = distance * 0.308
                         attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
                         used_barrier_name = None
+                        used_barrier_obj = None
                         barrier_IL = 0
                         if (
                             TAKE_ARI_BARRIER == True
@@ -2378,6 +2454,7 @@ class Pane_Eqmt_Info(tk.Frame):
                                 if barrier_IL_test > barrier_IL:
                                     barrier_IL = barrier_IL_test
                                     used_barrier_name = str(bar.barrier_name + " - ari")
+                                    used_barrier_obj = bar
                                     barrierListForExcelOutput_curData = (
                                         [
                                             barrier_IL,
@@ -2483,6 +2560,7 @@ class Pane_Eqmt_Info(tk.Frame):
                                     used_barrier_name = str(
                                         bar.barrier_name + barriermethod
                                     )
+                                    used_barrier_obj = bar
                                     barrierListForExcelOutput_curData = (
                                         [
                                             int(round(barrier_IL, 0)),
@@ -2531,7 +2609,12 @@ class Pane_Eqmt_Info(tk.Frame):
                         print(
                             f"eqmt: __{eqmt.eqmt_tag}, rcvr: __{rcvr.r_name}, bar: __{used_barrier_name}, barrier IL: __{barrier_IL}"
                         )
-
+                        self.parent.func_vars.e_to_r_with_bar[eqmt][rcvr][
+                            "bar_obj"
+                        ] = used_barrier_obj
+                        self.parent.func_vars.e_to_r_with_bar[eqmt][rcvr][
+                            "bar_il"
+                        ] = barrier_IL
                     except (ValueError, ZeroDivisionError):
                         print("MATH DOMAIN ERROR OCCURED")
                         spl = 1000
@@ -2563,12 +2646,12 @@ class Pane_Eqmt_Info(tk.Frame):
         self.focused_tree_children = self.receiver_tree.get_children()
         self.focused_line = self.receiver_tree.focus()
         self.current_receiver = self.receiver_tree.item(self.focused_line)["values"]
-        if self.parent.func_vars.e_to_r_lines_bool.get():
-            self.parent.pane_toolbox.draw_eqmt_to_rcvr_lines()
+        if self.parent.func_vars.e_to_r_shapes_bool.get():
+            self.parent.pane_toolbox.draw_eqmt_to_rcvr_shapes()
         else:
-            for line in self.parent.editor.e_to_r_lines:
-                self.parent.editor.canvas.delete(line)
-            self.parent.editor.e_to_r_lines.clear()
+            for shape in self.parent.editor.e_to_r_shapes:
+                self.parent.editor.canvas.delete(shape)
+            self.parent.editor.e_to_r_shapes.clear()
         print(self.current_receiver)
 
     def select_item_from_barrier_tree(self, event):
@@ -2585,7 +2668,6 @@ class Pane_Eqmt_Info(tk.Frame):
         self.focused_tree_children = None
 
     def onExportListButton(self):
-        print("exporting...")
         wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, keep_vba=True, data_only=False)
         ws = wb["Input LwA_XYZ"]
 
