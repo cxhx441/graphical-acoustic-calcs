@@ -13,7 +13,7 @@ import csv
 import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
-XL_FILEPATH        = "Aegis San Rafael - PL - 2020.08.17.xlsm"
+XL_FILEPATH = "Aegis San Rafael - PL - 2020.08.17.xlsm"
 XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 12 bold"
@@ -106,6 +106,9 @@ BAR_IL_COL_RANGE = range(73, 88)
 class FuncVars(object):
     def __init__(self, parent):
         self.parent = parent
+        seen_tag_strs = set()
+        seen_receiver_strs = set()
+        seen_barriers_strs = set()
 
         # initialize eqmt list
         self.equipment_list = list()
@@ -158,6 +161,10 @@ class FuncVars(object):
                 continue
             if count.value == None:
                 break
+            if str(eqmt_tag.value) in seen_tag_strs:
+                raise NameError(f"DUPLICATE_TAG_NAMES: {eqmt_tag.value}")
+            seen_tag_strs.add(str(eqmt_tag.value))
+
             self.equipment_list.append(
                 Equipment(
                     count.value,
@@ -193,6 +200,10 @@ class FuncVars(object):
                 continue
             if r_name.value == None:
                 break
+            if str(r_name.value) in seen_receiver_strs:
+                raise NameError(f"DUPLICATE_RCVR_NAME: {r_name.value}")
+            seen_receiver_strs.add(str(r_name.value))
+
             self.receiver_list.append(
                 Receiver(
                     str(r_name.value),
@@ -227,6 +238,10 @@ class FuncVars(object):
                 continue
             if barrier_name.value == None:
                 break
+            if str(barrier_name.value) in seen_barriers_strs:
+                raise NameError(f"DUPLICATE_BARRIER_NAME: {barrier_name.value}")
+            seen_barriers_strs.add(str(barrier_name.value))
+
             self.barrier_list.append(
                 Barrier(
                     str(barrier_name.value),
@@ -1426,7 +1441,7 @@ class Pane_Toolbox(tk.Frame):
 
                     spl = sound_power - eqmt.insertion_loss - attenuation - barrier_IL
                 except ValueError:
-                    print("MATH DOMAIN ERROR OCCURED")
+                    # print("MATH DOMAIN ERROR OCCURED")
                     spl = 1000
                 sound_pressure += 10 ** (spl / 10)
             grd_rcvr[2] = str(round(10 * math.log10(sound_pressure), 1))
@@ -2616,7 +2631,7 @@ class Pane_Eqmt_Info(tk.Frame):
                             "bar_il"
                         ] = barrier_IL
                     except (ValueError, ZeroDivisionError):
-                        print("MATH DOMAIN ERROR OCCURED")
+                        # print("MATH DOMAIN ERROR OCCURED")
                         spl = 1000
 
                 elif (
