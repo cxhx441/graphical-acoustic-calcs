@@ -161,6 +161,8 @@ class FuncVars(object):
                 continue
             if count.value == None:
                 break
+            if eqmt_tag.value is None:
+                raise NameError(f"BLANK EQMT_TAG: {eqmt_tag.value}")
             if str(eqmt_tag.value) in seen_tag_strs:
                 raise NameError(f"DUPLICATE_TAG_NAMES: {eqmt_tag.value}")
             seen_tag_strs.add(str(eqmt_tag.value))
