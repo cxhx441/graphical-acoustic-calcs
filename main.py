@@ -2693,7 +2693,7 @@ class Pane_Eqmt_Info(tk.Frame):
 
         # eqmt
         for obj in self.parent.func_vars.equipment_list:
-            for row in ws.iter_rows(max_row=100):
+            for row in ws.iter_rows():
                 if row[EQMT_NAME_COL].value == None:
                     break
                 if row[EQMT_NAME_COL].value.replace(" ", "-") == obj.eqmt_tag.replace(
