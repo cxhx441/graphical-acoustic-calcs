@@ -66,14 +66,14 @@ KNOWN_DISTANCE_FT_CELL = ws["AE20"]
 SCALE_LINE_DISTANCE_PX_CELL = ws["AF20"]
 
 # BAR BOOLS
-USE_SPECIFIC_BAR_BOOL_CELL = ws["AC19"]
-TAKE_ARI_BARRIER           = ws["AC20"]
-TAKE_OB_FRESNAL_BARRIER    = ws["AC21"]
-if type(USE_SPECIFIC_BAR_BOOL_CELL.value) is not bool:
+USE_SPECIFIC_BAR_BOOL      = ws["AC19"].value
+TAKE_ARI_BARRIER           = ws["AC20"].value
+TAKE_OB_FRESNAL_BARRIER    = ws["AC21"].value
+if not isinstance(USE_SPECIFIC_BAR_BOOL, bool):
     raise TypeError("USE_SPECIFIC_BAR must be TRUE or FALSE")
-if type(TAKE_ARI_BARRIER.value) is not bool:
+if not isinstance(TAKE_ARI_BARRIER, bool):
     raise TypeError("TAKE_ARI_BAR must be TRUE or FALSE")
-if type(TAKE_OB_FRESNAL_BARRIER.value) is not bool:
+if not isinstance(TAKE_OB_FRESNAL_BARRIER, bool):
     raise TypeError("TAKE_OB_FRESNEL_BAR must be TRUE or FALSE")
 
 # ROW/COLs for MATRICES
@@ -348,7 +348,7 @@ class FuncVars(object):
         self.quickdraw_bool = tk.IntVar()
         self.e_to_r_shapes_bool = tk.BooleanVar()
         self.use_specific_bar_bool = tk.BooleanVar()
-        self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL_CELL.value)
+        self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL)
 
     def update_master_scale(self, scale_line_distance_px, known_distance_ft):
         self.scale_line_distance_px = scale_line_distance_px
