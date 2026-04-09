@@ -19,9 +19,6 @@ XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 12 bold"
 BAR_IL_FONT = "Helvetica 14"
 
-TAKE_ARI_BARRIER = True
-TAKE_OB_FRESNAL_BARRIER = False
-
 # setting columns
 shutil.copyfile(XL_FILEPATH, XL_TEMP_FILEPATH)
 wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
@@ -68,10 +65,16 @@ BAR_Z1_COORD = ws["AF"]
 KNOWN_DISTANCE_FT_CELL = ws["AE20"]
 SCALE_LINE_DISTANCE_PX_CELL = ws["AF20"]
 
-# SPECIFIC BAR BOOL
+# BAR BOOLS
 USE_SPECIFIC_BAR_BOOL_CELL = ws["AC19"]
+TAKE_ARI_BARRIER           = ws["AC20"]
+TAKE_OB_FRESNAL_BARRIER    = ws["AC21"]
 if type(USE_SPECIFIC_BAR_BOOL_CELL.value) is not bool:
-    raise TypeError("cell must be TRUE or FALSE")
+    raise TypeError("USE_SPECIFIC_BAR must be TRUE or FALSE")
+if type(TAKE_ARI_BARRIER.value) is not bool:
+    raise TypeError("TAKE_ARI_BAR must be TRUE or FALSE")
+if type(TAKE_OB_FRESNAL_BARRIER.value) is not bool:
+    raise TypeError("TAKE_OB_FRESNEL_BAR must be TRUE or FALSE")
 
 # ROW/COLs for MATRICES
 IGNORE_MATRIX_COL = 108  # 1-index based
