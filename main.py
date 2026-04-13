@@ -474,6 +474,7 @@ class Editor(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.e_to_r_shapes = []
+        self.e_to_r_lines_for_opengl = []
 
         # open image
         self.image = Image.open(BED_IMAGE_FILEPATH)
@@ -1196,6 +1197,7 @@ class Pane_Toolbox(tk.Frame):
             self.parent.func_vars.equipment_list,
             self.parent.func_vars.receiver_list,
             self.parent.func_vars.barrier_list,
+            self.parent.editor.e_to_r_lines_for_opengl,
             master_scale=self.parent.func_vars.master_scale,
             image_size_factor=self.parent.editor.image_size_factor,
             image_path=BED_IMAGE_FILEPATH,
@@ -1204,9 +1206,13 @@ class Pane_Toolbox(tk.Frame):
         self._view3d_thread.start()
 
     def draw_eqmt_to_rcvr_shapes(self):
+
         for shape in self.parent.editor.e_to_r_shapes:
             self.parent.editor.canvas.delete(shape)
         self.parent.editor.e_to_r_shapes.clear()
+        self.parent.editor.e_to_r_lines_for_opengl = []
+        tmp_e_2_r_nobar = []
+        tmp_e_2_r_yesbar = []
 
         if not self.parent.pane_eqmt_info.current_receiver:
             return
@@ -1232,9 +1238,7 @@ class Pane_Toolbox(tk.Frame):
                 r_coords = center_x, center_y
 
                 # eqmt
-                canvas_eqmt_id = self.parent.editor.canvas.find_withtag(eqmt.eqmt_tag)[
-                    0
-                ]
+                canvas_eqmt_id = self.parent.editor.canvas.find_withtag(eqmt.eqmt_tag)[ 0 ]
                 # coords = self.parent.editor.canvas.bbox(canvas_eqmt_id)
                 coords = self.parent.editor.canvas.coords(canvas_eqmt_id)
                 center_x = (coords[0] + coords[2]) / 2
@@ -1245,8 +1249,10 @@ class Pane_Toolbox(tk.Frame):
                 bar_obj = self.parent.func_vars.e_to_r_with_bar[eqmt][rcvr]["bar_obj"]
                 if not bar_obj:
                     stnd_draw_lines.append([r_coords, e_coords])
+                    tmp_e_2_r_nobar.append( (eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord, 1, 1, 0 )) # yellow
                 else:
                     bar_draw_lines.append([r_coords, e_coords])
+                    tmp_e_2_r_yesbar.append( (eqmt.x_coord, eqmt.y_coord, eqmt.z_coord, rcvr.x_coord, rcvr.y_coord, rcvr.z_coord, 0, 0, 1)) # blue
 
                     bar_il = self.parent.func_vars.e_to_r_with_bar[eqmt][rcvr]["bar_il"]
                     canvas_bar_id = self.parent.editor.canvas.find_withtag(
@@ -1296,6 +1302,8 @@ class Pane_Toolbox(tk.Frame):
                         )
                     )
 
+                # for opengl line draw
+                self.parent.editor.e_to_r_lines_for_opengl = tmp_e_2_r_nobar + tmp_e_2_r_yesbar
                 # TODO
                 # check barriers
                 # get barrier coords

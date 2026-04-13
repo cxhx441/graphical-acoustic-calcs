@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 class SceneData:
     """Thread-safe snapshot of scene objects. Copy-on-create from main thread."""
 
-    def __init__(self, equipment_list, receiver_list, barrier_list,
+    def __init__(self, equipment_list, receiver_list, barrier_list, e_to_r_list,
                  master_scale=1.0, image_size_factor=1.0, image_path="bed_image.png"):
         self.equipment = [
             {"tag": e.eqmt_tag, "x": e.x_coord, "y": e.y_coord, "z": e.z_coord}
@@ -41,6 +41,20 @@ class SceneData:
                 "z1": b.z1_coord,
             }
             for b in barrier_list
+        ]
+        self.e_to_r = [
+            {
+                "x0": e2r[0],
+                "y0": e2r[1],
+                "z0": e2r[2],
+                "x1": e2r[3],
+                "y1": e2r[4],
+                "z1": e2r[5],
+                "r": e2r[6],
+                "g": e2r[7],
+                "b": e2r[8],
+            }
+            for e2r in e_to_r_list
         ]
         self.master_scale = master_scale  # feet per pixel
         self.image_size_factor = image_size_factor
@@ -170,8 +184,10 @@ class View3D:
         if not os.path.exists(path):
             return
         img = Image.open(path).convert("RGBA")
-        self._ground_img_w = img.width
-        self._ground_img_h = img.height
+        # img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        isf = self._scene.image_size_factor
+        self._ground_img_w = img.width * isf
+        self._ground_img_h = img.height * isf
         img_array = np.array(img, dtype=np.uint8)
 
         tex_id = gl.glGenTextures(1)
@@ -240,31 +256,36 @@ class View3D:
     # ------------------------------------------------------------------
 
     def _render(self):
+
         w, h = self._viewport_size
         gl.glViewport(0, 0, w, h)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         self._camera.apply(w, h)
 
+        gl.glPushMatrix()
+        gl.glScale(1.0, -1.0, 1.0) # Flip X-axis, keep Y and Z the same
+
         if self._ground_tex is not None:
             self._draw_ground_image()
         else:
             self._draw_ground_grid()
-
         self._draw_axes()
         self._draw_barriers()
         self._draw_equipment()
         self._draw_receivers()
+        self._draw_e_to_r()
+
+        gl.glPopMatrix()
 
         # HUD drawn last (2D overlay, no depth)
         self._draw_scale_bar()
 
     def _draw_ground_image(self):
         ms = self._scene.master_scale
-        isf = self._scene.image_size_factor
         if ms <= 0:
             return
-        w_world = self._ground_img_w * ms * isf
-        h_world = self._ground_img_h * ms * isf
+        w_world = self._ground_img_w * ms
+        h_world = self._ground_img_h * ms
 
         gl.glDisable(gl.GL_LIGHTING)
         gl.glEnable(gl.GL_TEXTURE_2D)
@@ -317,6 +338,19 @@ class View3D:
         gl.glEnd()
         gl.glLineWidth(1.0)
         gl.glEnable(gl.GL_LIGHTING)
+
+    def _draw_e_to_r(self):
+        for l in self._scene.e_to_r:
+            x0, y0, z0 = l["x0"], l["y0"], l["z0"]
+            x1, y1, z1 = l["x1"], l["y1"], l["z1"]
+            r, g, b = l["r"], l["g"], l["b"]
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glLineWidth(1.0)
+            gl.glBegin(gl.GL_LINES)
+            gl.glColor3f(r, g, b); gl.glVertex3f(x0, y0, z0); gl.glVertex3f(x1, y1, z1)
+            gl.glEnd()
+            gl.glLineWidth(1.0)
+            gl.glEnable(gl.GL_LIGHTING)
 
     def _draw_barriers(self):
         for b in self._scene.barriers:
