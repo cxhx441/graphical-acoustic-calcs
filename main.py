@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import math
 import sys
+import threading
 import openpyxl
 import shutil
 from PIL import ImageTk, Image
@@ -13,7 +14,7 @@ import csv
 import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
-XL_FILEPATH = "Aegis San Rafael - PL - 2020.08.17.xlsm"
+XL_FILEPATH = "WCV - PL - 2025.04.06.xlsm"
 XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 12 bold"
@@ -1153,6 +1154,9 @@ class Pane_Toolbox(tk.Frame):
             command=self.export_bar_file,
             font=(None, 15),
         )
+        self.button_view_3d = tk.Button(
+            self, text="View 3D", command=self.open_3d_view, font=(None, 15)
+        )
 
         self.button_set_image_scale.grid(row=0, column=0, sticky=tk.N + tk.W)
         self.button_measure.grid(row=1, column=0, sticky=tk.N + tk.W)
@@ -1165,6 +1169,7 @@ class Pane_Toolbox(tk.Frame):
         self.button_draw_grid.grid(row=0, column=2, sticky=tk.N + tk.W)
         self.button_update_grid.grid(row=1, column=2, sticky=tk.N + tk.W)
         self.button_export_bar_file.grid(row=2, column=2, sticky=tk.N + tk.W)
+        self.button_view_3d.grid(row=3, column=2, sticky=tk.N + tk.W)
 
     def specificbar_update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
@@ -1182,6 +1187,21 @@ class Pane_Toolbox(tk.Frame):
         BarrierPlotExporter.exportBarrierPlots(
             self.parent.pane_eqmt_info.barrierListForExcelOutput[1:]
         )
+
+    def open_3d_view(self):
+        if hasattr(self, "_view3d_thread") and self._view3d_thread.is_alive():
+            return
+        from opengl_view import View3D, SceneData
+        scene = SceneData(
+            self.parent.func_vars.equipment_list,
+            self.parent.func_vars.receiver_list,
+            self.parent.func_vars.barrier_list,
+            master_scale=self.parent.func_vars.master_scale,
+            image_size_factor=self.parent.editor.image_size_factor,
+            image_path=BED_IMAGE_FILEPATH,
+        )
+        self._view3d_thread = threading.Thread(target=View3D(scene).run, daemon=True)
+        self._view3d_thread.start()
 
     def draw_eqmt_to_rcvr_shapes(self):
         for shape in self.parent.editor.e_to_r_shapes:
@@ -2082,16 +2102,16 @@ class Pane_Eqmt_Info(tk.Frame):
         # fixing escape on error with same barrier coordinate or same eqmt/receiver x/y
         if eqmt_x == rcvr_x:
             eqmt_x += 0.0001
-            print("corrected eqmt_x==rcvr_x error")
+            # print("corrected eqmt_x==rcvr_x error")
         if eqmt_y == rcvr_y:
             eqmt_y += 0.0001
-            print("corrected eqmt_y==rcvr_y error")
+            # print("corrected eqmt_y==rcvr_y error")
         if bar_x0 == bar_x1:
             bar_x0 += 0.0001
-            print("corrected bar_x0==bar_x1 error")
+            # print("corrected bar_x0==bar_x1 error")
         if bar_y0 == bar_y1:
             bar_y0 += 0.0001
-            print("corrected bar_y0==bar_y1 error")
+            # print("corrected bar_y0==bar_y1 error")
         # testing if line of sight is broken along HORIZONTAL plane
         eqmt_point = utils.Point(eqmt_x, eqmt_y)
         receiver_point = utils.Point(rcvr_x, rcvr_y)
