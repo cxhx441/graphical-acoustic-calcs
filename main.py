@@ -1190,19 +1190,30 @@ class Pane_Toolbox(tk.Frame):
         )
 
     def open_3d_view(self):
-        if hasattr(self, "_view3d_thread") and self._view3d_thread.is_alive():
-            return
         from opengl_view import View3D, SceneData
-        scene = SceneData(
-            self.parent.func_vars.equipment_list,
-            self.parent.func_vars.receiver_list,
-            self.parent.func_vars.barrier_list,
-            self.parent.editor.e_to_r_lines_for_opengl,
-            master_scale=self.parent.func_vars.master_scale,
-            image_size_factor=self.parent.editor.image_size_factor,
-            image_path=BED_IMAGE_FILEPATH,
-        )
-        self._view3d_thread = threading.Thread(target=View3D(scene).run, daemon=True)
+
+        def make_scene():
+            return SceneData(
+                self.parent.func_vars.equipment_list,
+                self.parent.func_vars.receiver_list,
+                self.parent.func_vars.barrier_list,
+                self.parent.editor.e_to_r_lines_for_opengl,
+                master_scale=self.parent.func_vars.master_scale,
+                image_size_factor=self.parent.editor.image_size_factor,
+                image_path=BED_IMAGE_FILEPATH,
+            )
+
+        # If already open, reload scene data in-place (camera preserved)
+        if hasattr(self, "_view3d_instance") and self._view3d_instance is not None:
+            if hasattr(self, "_view3d_thread") and self._view3d_thread.is_alive():
+                self._view3d_instance.request_reload(make_scene())
+                return
+
+        # Fresh open
+        v = View3D(make_scene())
+        v._reload_callback = make_scene
+        self._view3d_instance = v
+        self._view3d_thread = threading.Thread(target=v.run, daemon=True)
         self._view3d_thread.start()
 
     def draw_eqmt_to_rcvr_shapes(self):

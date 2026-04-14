@@ -79,13 +79,18 @@ class OrbitCamera:
         z = self.target[2] + self.radius * math.sin(el)
         return np.array([x, y, z])
 
-    def apply(self, width, height):
+    def apply(self, width, height, ortho=False):
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
         aspect = width / max(height, 1)
         near = max(self.radius * 0.001, 0.1)
         far = self.radius * 10.0
-        glu.gluPerspective(self.fov, aspect, near, far)
+        if ortho:
+            half_h = self.radius * math.tan(math.radians(self.fov / 2))
+            half_w = half_h * aspect
+            gl.glOrtho(-half_w, half_w, -half_h, half_h, near, far)
+        else:
+            glu.gluPerspective(self.fov, aspect, near, far)
 
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
@@ -129,6 +134,9 @@ class View3D:
         self._ground_img_h = 0
         self._scene_bounds = {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100}
         self._label_cache = {}  # text -> (tex_id, w, h)
+        self._ortho = False
+        self._pending_scene = None   # set from any thread; consumed in _render()
+        self._reload_callback = None  # callable() → SceneData; set by caller
 
     def run(self):
         if not glfw.init():
@@ -184,10 +192,11 @@ class View3D:
         if not os.path.exists(path):
             return
         img = Image.open(path).convert("RGBA")
-        # img = img.transpose(Image.FLIP_TOP_BOTTOM)
         isf = self._scene.image_size_factor
         self._ground_img_w = img.width * isf
         self._ground_img_h = img.height * isf
+        self._loaded_image_path = path
+        self._loaded_image_scale = isf
         img_array = np.array(img, dtype=np.uint8)
 
         tex_id = gl.glGenTextures(1)
@@ -243,11 +252,21 @@ class View3D:
         span = max(b["x_max"] - b["x_min"], b["y_max"] - b["y_min"])
         self._camera.radius = max(span * 0.9, 50.0)
 
+    def close(self):
+        """Signal the GLFW window to close (safe to call from any thread)."""
+        if self._window:
+            glfw.set_window_should_close(self._window, True)
+
+    def request_reload(self, new_scene):
+        """Swap in fresh scene data on the next rendered frame (GIL-safe)."""
+        self._pending_scene = new_scene
+
     def _register_callbacks(self):
         glfw.set_mouse_button_callback(self._window, self._on_mouse_button)
         glfw.set_cursor_pos_callback(self._window, self._on_cursor_pos)
         glfw.set_scroll_callback(self._window, self._on_scroll)
         glfw.set_framebuffer_size_callback(self._window, self._on_resize)
+        glfw.set_key_callback(self._window, self._on_key)
         w, h = glfw.get_framebuffer_size(self._window)
         self._viewport_size = (w, h)
 
@@ -256,11 +275,22 @@ class View3D:
     # ------------------------------------------------------------------
 
     def _render(self):
+        # Consume any pending scene reload (set from another thread or key press)
+        if self._pending_scene is not None:
+            self._scene = self._pending_scene
+            self._pending_scene = None
+            self._compute_scene_bounds()
+            if (self._scene.image_path != getattr(self, "_loaded_image_path", None) or
+                    self._scene.image_size_factor != getattr(self, "_loaded_image_scale", None)):
+                if self._ground_tex is not None:
+                    gl.glDeleteTextures([self._ground_tex])
+                    self._ground_tex = None
+                self._load_ground_texture()
 
         w, h = self._viewport_size
         gl.glViewport(0, 0, w, h)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        self._camera.apply(w, h)
+        self._camera.apply(w, h, ortho=self._ortho)
 
         gl.glPushMatrix()
         gl.glScale(1.0, -1.0, 1.0) # Flip X-axis, keep Y and Z the same
@@ -597,6 +627,14 @@ class View3D:
             self._camera.target[1] += right_y * dx * scale
             self._camera.target[0] -= fwd_x * dy * scale
             self._camera.target[1] -= fwd_y * dy * scale
+
+    def _on_key(self, window, key, scancode, action, mods):
+        if action == glfw.PRESS:
+            if key == glfw.KEY_Q:
+                self._ortho = not self._ortho
+            elif key == glfw.KEY_R:
+                if self._reload_callback is not None:
+                    self.request_reload(self._reload_callback())
 
     def _on_scroll(self, window, xoff, yoff):
         self._camera.zoom(0.9 ** yoff)
