@@ -128,7 +128,7 @@ class View3D:
         self._camera = OrbitCamera()
         self._mouse_last = None
         self._mouse_button = None
-        self._viewport_size = (1024, 768)
+        self._viewport_size = (1536, 1152)
         self._ground_tex = None
         self._ground_img_w = 0
         self._ground_img_h = 0
@@ -144,7 +144,7 @@ class View3D:
         try:
             glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 2)
             glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 1)
-            self._window = glfw.create_window(1024, 768, "3D Acoustic View", None, None)
+            self._window = glfw.create_window(*self._viewport_size, "3D Acoustic View", None, None)
             if not self._window:
                 raise RuntimeError("GLFW window creation failed")
             glfw.make_context_current(self._window)

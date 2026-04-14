@@ -478,6 +478,7 @@ class Editor(tk.Frame):
 
         # open image
         self.image = Image.open(BED_IMAGE_FILEPATH)
+        self.original_image = Image.open(BED_IMAGE_FILEPATH)  # never resized — source for zoom resamples
 
         # image sizing
         self.imageWidth, self.imageHeight = self.image.size
@@ -487,10 +488,15 @@ class Editor(tk.Frame):
         self.imageHeight *= self.image_size_factor
         self.imageWidth = int(self.imageWidth)
         self.imageHeight = int(self.imageHeight)
+        self.base_imageWidth = self.imageWidth    # zoom=1 pixel dimensions
+        self.base_imageHeight = self.imageHeight
         self.image = self.image.resize(
             (self.imageWidth, self.imageHeight), Image.LANCZOS
         )
         self.tk_image = ImageTk.PhotoImage(self.image)
+        self.zoom_factor = 1.0
+        self.ZOOM_MIN = 0.1
+        self.ZOOM_MAX = 10.0
 
         # canvas sizing
         self.screen_width = self.winfo_screenwidth()
@@ -545,8 +551,8 @@ class Editor(tk.Frame):
         for eqmt in self.parent.func_vars.equipment_list:
             green_hex_color = utils.rgb_to_hex((0, 254, 0))
             offset = 20
-            x = eqmt.x_coord / self.parent.func_vars.master_scale
-            y = eqmt.y_coord / self.parent.func_vars.master_scale
+            x = self.world_to_px(eqmt.x_coord)
+            y = self.world_to_px(eqmt.y_coord)
             self.rectPerm = self.canvas.create_rectangle(
                 x - offset,
                 y - offset,
@@ -568,8 +574,8 @@ class Editor(tk.Frame):
         for rcvr in self.parent.func_vars.receiver_list:
             red_hex_color = utils.rgb_to_hex((254, 0, 0))
             offset = 20
-            x = rcvr.x_coord / self.parent.func_vars.master_scale
-            y = rcvr.y_coord / self.parent.func_vars.master_scale
+            x = self.world_to_px(rcvr.x_coord)
+            y = self.world_to_px(rcvr.y_coord)
             self.rectPerm = self.canvas.create_rectangle(
                 x - offset,
                 y - offset,
@@ -584,10 +590,10 @@ class Editor(tk.Frame):
             )
 
         for bar in self.parent.func_vars.barrier_list:
-            x0 = bar.x0_coord / self.parent.func_vars.master_scale
-            y0 = bar.y0_coord / self.parent.func_vars.master_scale
-            x1 = bar.x1_coord / self.parent.func_vars.master_scale
-            y1 = bar.y1_coord / self.parent.func_vars.master_scale
+            x0 = self.world_to_px(bar.x0_coord)
+            y0 = self.world_to_px(bar.y0_coord)
+            x1 = self.world_to_px(bar.x1_coord)
+            y1 = self.world_to_px(bar.y1_coord)
             self.linePerm = self.canvas.create_line(
                 x0, y0, x1, y1, tag=bar.barrier_name, fill="purple", width=5
             )
@@ -604,16 +610,75 @@ class Editor(tk.Frame):
     def _bound_to_mousewheel(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Shift-MouseWheel>", self._on_shift_mousewheel)
+        self.canvas.bind_all("<Control-MouseWheel>", self._on_ctrl_mousewheel)
 
     def _unbound_to_mousewheel(self, event):
         self.canvas.unbind_all("<MouseWheel>")
+        self.canvas.unbind_all("<Shift-MouseWheel>")
+        self.canvas.unbind_all("<Control-MouseWheel>")
 
     def _on_mousewheel(self, event):
+        if event.state & 0x0004:  # Ctrl held — handled by _on_ctrl_mousewheel
+            return
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _on_shift_mousewheel(self, event):
         self.canvas.xview_scroll(int(-1 * (event.delta / 120)), "units")
         """Scrollable image"""
+
+    def _on_ctrl_mousewheel(self, event):
+        factor = 1.15 if event.delta > 0 else (1 / 1.15)
+        new_zoom = max(self.ZOOM_MIN, min(self.ZOOM_MAX, self.zoom_factor * factor))
+        if new_zoom == self.zoom_factor:
+            return
+
+        # World point under cursor — stays fixed across zoom
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        world_x = self.px_to_world(cx)
+        world_y = self.px_to_world(cy)
+
+        self.zoom_factor = new_zoom
+        self.full_redraw()
+
+        # Scroll so the same world point stays under the cursor
+        new_cx = self.world_to_px(world_x)
+        new_cy = self.world_to_px(world_y)
+        total_w = self.base_imageWidth * self.zoom_factor
+        total_h = self.base_imageHeight * self.zoom_factor
+        xfrac = max(0.0, min(1.0, (new_cx - event.x) / total_w))
+        yfrac = max(0.0, min(1.0, (new_cy - event.y) / total_h))
+        self.canvas.xview_moveto(xfrac)
+        self.canvas.yview_moveto(yfrac)
+
+    def world_to_px(self, world_coord_ft):
+        """Convert world coordinate (feet) to canvas pixels at current zoom."""
+        return (world_coord_ft / self.parent.func_vars.master_scale) * self.zoom_factor
+
+    def px_to_world(self, canvas_px):
+        """Convert canvas pixels at current zoom to world coordinate (feet)."""
+        return (canvas_px / self.zoom_factor) * self.parent.func_vars.master_scale
+
+    def full_redraw(self):
+        """Resize image and redraw all canvas items at the current zoom_factor."""
+        new_w = int(self.base_imageWidth * self.zoom_factor)
+        new_h = int(self.base_imageHeight * self.zoom_factor)
+
+        zoomed_pil = self.original_image.resize((new_w, new_h), Image.LANCZOS)
+        self.tk_image = ImageTk.PhotoImage(zoomed_pil)
+        self.canvas.itemconfig("bed_layer", image=self.tk_image)
+        self.canvas.coords("bed_layer", 0, 0)
+        self.canvas.config(scrollregion=(0, 0, new_w, new_h))
+
+        for eqmt in self.parent.func_vars.equipment_list:
+            self.canvas.delete(eqmt.eqmt_tag)
+        for rcvr in self.parent.func_vars.receiver_list:
+            self.canvas.delete(rcvr.r_name)
+        for bar in self.parent.func_vars.barrier_list:
+            self.canvas.delete(bar.barrier_name)
+
+        self.initialize_eqmt_rcvr_barrier_drawings()
+        self.parent.pane_toolbox.draw_eqmt_to_rcvr_shapes()
 
     def get_angle(self, x, y):
         v0 = [x, 0]
@@ -629,10 +694,7 @@ class Editor(tk.Frame):
 
     def update_distance_label(self):
         dist = math.sqrt((self.x0 - self.curX) ** 2 + (self.y0 - self.curY) ** 2)
-        dist = round(
-            self.parent.func_vars.master_scale * dist,
-            2,
-        )
+        dist = round(self.px_to_world(dist), 2)
         self.parent.pane_eqmt_info.measurement_label.configure(
             text="Measurement: " + str(dist) + " ft"
         )
@@ -698,7 +760,7 @@ class Editor(tk.Frame):
             scale_line_coords[2],
             scale_line_coords[1],
             scale_line_coords[3],
-        )
+        ) / self.zoom_factor
         _known_distance_ft = float(self.parent.pane_eqmt_info.entryBox1.get())
         self.parent.func_vars.update_master_scale(
             _scale_line_distance_px, _known_distance_ft
@@ -756,12 +818,8 @@ class Editor(tk.Frame):
         # update this one piece of eqmt
         for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == eqmt_tag:
-                obj.x_coord = self.x0 + (self.curX - self.x0) / 2
-                obj.y_coord = self.y0 + (self.curY - self.y0) / 2
-                obj.x_coord *= self.parent.func_vars.master_scale
-                obj.y_coord *= self.parent.func_vars.master_scale
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
+                obj.x_coord = round(self.px_to_world(self.x0 + (self.curX - self.x0) / 2), 2)
+                obj.y_coord = round(self.px_to_world(self.y0 + (self.curY - self.y0) / 2), 2)
 
         self.parent.pane_eqmt_info.focused_tree_children = (
             self.parent.pane_eqmt_info.equipment_tree.get_children()
@@ -837,12 +895,8 @@ class Editor(tk.Frame):
         # update this one rcvr
         for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == r_name:
-                obj.x_coord = self.x0 + (self.curX - self.x0) / 2
-                obj.y_coord = self.y0 + (self.curY - self.y0) / 2
-                obj.x_coord *= self.parent.func_vars.master_scale
-                obj.y_coord *= self.parent.func_vars.master_scale
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
+                obj.x_coord = round(self.px_to_world(self.x0 + (self.curX - self.x0) / 2), 2)
+                obj.y_coord = round(self.px_to_world(self.y0 + (self.curY - self.y0) / 2), 2)
 
         self.parent.pane_eqmt_info.focused_tree_children = (
             self.parent.pane_eqmt_info.receiver_tree.get_children()
@@ -915,18 +969,10 @@ class Editor(tk.Frame):
         # update this one bar
         for obj in self.parent.func_vars.barrier_list:
             if obj.barrier_name == barrier_name:
-                obj.x0_coord = self.x0
-                obj.y0_coord = self.y0
-                obj.x1_coord = self.curX
-                obj.y1_coord = self.curY
-                obj.x0_coord *= self.parent.func_vars.master_scale
-                obj.y0_coord *= self.parent.func_vars.master_scale
-                obj.x1_coord *= self.parent.func_vars.master_scale
-                obj.y1_coord *= self.parent.func_vars.master_scale
-                obj.x0_coord = round(obj.x0_coord, 2)
-                obj.y0_coord = round(obj.y0_coord, 2)
-                obj.x1_coord = round(obj.x1_coord, 2)
-                obj.y1_coord = round(obj.y1_coord, 2)
+                obj.x0_coord = round(self.px_to_world(self.x0), 2)
+                obj.y0_coord = round(self.px_to_world(self.y0), 2)
+                obj.x1_coord = round(self.px_to_world(self.curX), 2)
+                obj.y1_coord = round(self.px_to_world(self.curY), 2)
 
         self.parent.pane_eqmt_info.focused_tree_children = (
             self.parent.pane_eqmt_info.barrier_tree.get_children()
@@ -1051,44 +1097,20 @@ class Editor(tk.Frame):
 
         for obj in self.parent.func_vars.equipment_list:
             if obj.eqmt_tag == self.tag_rcvr_or_barr_num:
-                obj.x_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
+                obj.x_coord = round(self.obj_x_coord_0 + self.px_to_world(x_shifter), 2)
+                obj.y_coord = round(self.obj_y_coord_0 + self.px_to_world(y_shifter), 2)
 
         for obj in self.parent.func_vars.receiver_list:
             if obj.r_name == self.tag_rcvr_or_barr_num:
-                obj.x_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x_coord = round(obj.x_coord, 2)
-                obj.y_coord = round(obj.y_coord, 2)
+                obj.x_coord = round(self.obj_x_coord_0 + self.px_to_world(x_shifter), 2)
+                obj.y_coord = round(self.obj_y_coord_0 + self.px_to_world(y_shifter), 2)
 
         for obj in self.parent.func_vars.barrier_list:
             if obj.barrier_name == self.tag_rcvr_or_barr_num:
-                obj.x0_coord = (
-                    self.obj_x_coord_0 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y0_coord = (
-                    self.obj_y_coord_0 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x1_coord = (
-                    self.obj_x_coord_1 + x_shifter * self.parent.func_vars.master_scale
-                )
-                obj.y1_coord = (
-                    self.obj_y_coord_1 + y_shifter * self.parent.func_vars.master_scale
-                )
-                obj.x0_coord = round(obj.x0_coord, 2)
-                obj.y0_coord = round(obj.y0_coord, 2)
-                obj.x1_coord = round(obj.x1_coord, 2)
-                obj.y1_coord = round(obj.y1_coord, 2)
+                obj.x0_coord = round(self.obj_x_coord_0 + self.px_to_world(x_shifter), 2)
+                obj.y0_coord = round(self.obj_y_coord_0 + self.px_to_world(y_shifter), 2)
+                obj.x1_coord = round(self.obj_x_coord_1 + self.px_to_world(x_shifter), 2)
+                obj.y1_coord = round(self.obj_y_coord_1 + self.px_to_world(y_shifter), 2)
 
         self.parent.pane_eqmt_info.update_est_noise_levels()
         self.parent.pane_toolbox.draw_eqmt_to_rcvr_shapes()
@@ -1346,10 +1368,10 @@ class Pane_Toolbox(tk.Frame):
         grid_rect_coords = self.parent.editor.canvas.coords(
             self.parent.editor.grid_rect
         )
-        start_x_coord_ft = grid_rect_coords[0] * self.parent.func_vars.master_scale
-        start_y_coord_ft = grid_rect_coords[1] * self.parent.func_vars.master_scale
-        end_x_coord_ft = grid_rect_coords[2] * self.parent.func_vars.master_scale
-        end_y_coord_ft = grid_rect_coords[3] * self.parent.func_vars.master_scale
+        start_x_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[0])
+        start_y_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[1])
+        end_x_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[2])
+        end_y_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[3])
 
         grid_receiver_list = []
         cur_x_coord_ft = start_x_coord_ft
@@ -3152,6 +3174,13 @@ class Main_Application(tk.Frame):
 
 
 def main():
+    # Initialize GLFW before Tkinter so its DPI awareness call (SetProcessDPIAwareness)
+    # happens first. If done later (e.g. on first "View 3D" click), Windows re-scales
+    # the already-open Tkinter window, making it shrink unexpectedly.
+    import glfw
+    glfw.init()
+    glfw.terminate()
+
     root = tk.Tk()
     mainApp = Main_Application(root)
     mainApp.pack(side="top", fill="both", expand=True)
