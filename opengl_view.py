@@ -137,6 +137,12 @@ class View3D:
         self._ortho = False
         self._pending_scene = None   # set from any thread; consumed in _render()
         self._reload_callback = None  # callable() → SceneData; set by caller
+        self._selected      = None   # {'type': 'eqmt'|'rcvr'|'barrier', 'index': int, 'pos': np.array}
+        self._pick_start    = None   # (mx, my) of left-click press, for click-vs-drag detection
+        self._axis_state    = {}     # {'X': bool, ...} — False=positive side, True=negative
+        self._draw_mv       = None   # GL_MODELVIEW_MATRIX captured after glScale each frame
+        self._draw_proj     = None   # GL_PROJECTION_MATRIX captured each frame
+        self._draw_viewport = None   # GL_VIEWPORT captured each frame
 
     def run(self):
         if not glfw.init():
@@ -252,6 +258,104 @@ class View3D:
         span = max(b["x_max"] - b["x_min"], b["y_max"] - b["y_min"])
         self._camera.radius = max(span * 0.9, 50.0)
 
+    def _snap_camera_axis(self, axis: str):
+        """Snap camera to look along the given world axis. Toggles +/- side each call."""
+        flipped = not self._axis_state.get(axis, False)
+        self._axis_state = {}
+        self._axis_state[axis] = flipped
+
+        if axis == 'X':
+            self._camera.azimuth   = 180.0 if flipped else 0.0
+            self._camera.elevation = 0.0
+        elif axis == 'Y':
+            self._camera.azimuth   = 270.0 if flipped else 90.0
+            self._camera.elevation = 0.0
+        elif axis == 'Z':
+            self._camera.azimuth   = 270.0
+            self._camera.elevation = -89.0 if flipped else 89.0
+
+        if self._selected is not None:
+            self._camera.target = self._selected['pos'].copy()
+
+    def _pick(self, mx: float, my: float):
+        """Screen-space object picking. Sets or clears self._selected."""
+        if self._draw_mv is None:
+            return
+        w, h = self._viewport_size
+        win_y = h - my   # flip: GLFW top-left origin → OpenGL bottom-left origin
+        best_dist, best = 20.0, None
+
+        def proj(wx, wy, wz):
+            try:
+                sx, sy, _ = glu.gluProject(wx, wy, wz,
+                                self._draw_mv, self._draw_proj, self._draw_viewport)
+                return sx, sy
+            except Exception:
+                return None
+
+        for i, e in enumerate(self._scene.equipment):
+            r = proj(e["x"], e["y"], e["z"])
+            if r is None:
+                continue
+            d = math.hypot(r[0] - mx, r[1] - win_y)
+            if d < best_dist:
+                best_dist = d
+                best = {'type': 'eqmt', 'index': i,
+                        'pos': np.array([e["x"], e["y"], e["z"]])}
+
+        for i, r in enumerate(self._scene.receivers):
+            res = proj(r["x"], r["y"], r["z"])
+            if res is None:
+                continue
+            d = math.hypot(res[0] - mx, res[1] - win_y)
+            if d < best_dist:
+                best_dist = d
+                best = {'type': 'rcvr', 'index': i,
+                        'pos': np.array([r["x"], r["y"], r["z"]])}
+
+        for i, b in enumerate(self._scene.barriers):
+            bh = max(b["z0"], b["z1"]) or 10.0
+            bx = (b["x0"] + b["x1"]) / 2.0
+            by = (b["y0"] + b["y1"]) / 2.0
+            bz = bh / 2.0
+            res = proj(bx, by, bz)
+            if res is None:
+                continue
+            d = math.hypot(res[0] - mx, res[1] - win_y)
+            if d < best_dist:
+                best_dist = d
+                best = {'type': 'barrier', 'index': i,
+                        'pos': np.array([bx, by, bz])}
+
+        self._selected = best
+        if best is not None:
+            self._camera.target = best['pos'].copy()
+
+    def _cursor_world_hit(self, mx: float, my: float):
+        """
+        Unproject cursor through cached drawing matrices; return the world point
+        where the view ray intersects the horizontal plane z = camera.target[2].
+        Returns None if matrices are not yet cached or ray is nearly horizontal.
+        """
+        if self._draw_mv is None:
+            return None
+        w, h = self._viewport_size
+        win_y = h - my
+        try:
+            near = np.array(glu.gluUnProject(mx, win_y, 0.0,
+                             self._draw_mv, self._draw_proj, self._draw_viewport))
+            far  = np.array(glu.gluUnProject(mx, win_y, 1.0,
+                             self._draw_mv, self._draw_proj, self._draw_viewport))
+        except Exception:
+            return None
+        ray = far - near
+        if abs(ray[2]) < 1e-6:   # ray nearly parallel to ground — skip nudge
+            return None
+        t = (self._camera.target[2] - near[2]) / ray[2]
+        if t <= 0:
+            return None
+        return near + t * ray
+
     def close(self):
         """Signal the GLFW window to close (safe to call from any thread)."""
         if self._window:
@@ -294,6 +398,11 @@ class View3D:
 
         gl.glPushMatrix()
         gl.glScale(1.0, -1.0, 1.0) # Flip X-axis, keep Y and Z the same
+
+        # Cache matrices for picking and zoom-toward-cursor (must be after the Y-flip scale)
+        self._draw_mv       = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
+        self._draw_proj     = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
+        self._draw_viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
 
         if self._ground_tex is not None:
             self._draw_ground_image()
@@ -383,7 +492,10 @@ class View3D:
             gl.glEnable(gl.GL_LIGHTING)
 
     def _draw_barriers(self):
-        for b in self._scene.barriers:
+        for i, b in enumerate(self._scene.barriers):
+            is_sel = (self._selected is not None
+                      and self._selected['type'] == 'barrier'
+                      and self._selected['index'] == i)
             h = max(b["z0"], b["z1"])
             if h <= 0:
                 h = 10.0
@@ -394,7 +506,10 @@ class View3D:
             nx, ny = (-dy / length, dx / length) if length > 0 else (0.0, 1.0)
 
             gl.glEnable(gl.GL_LIGHTING)
-            gl.glColor4f(0.5, 0.55, 0.7, 0.85)
+            if is_sel:
+                gl.glColor4f(0.85, 0.85, 0.0, 0.92)
+            else:
+                gl.glColor4f(0.5, 0.55, 0.7, 0.85)
             gl.glBegin(gl.GL_QUADS)
             gl.glNormal3f(nx, ny, 0.0)
             gl.glVertex3f(x0, y0, 0.0)
@@ -404,7 +519,10 @@ class View3D:
             gl.glEnd()
 
             gl.glDisable(gl.GL_LIGHTING)
-            gl.glColor3f(0.2, 0.25, 0.5)
+            if is_sel:
+                gl.glColor3f(0.6, 0.6, 0.0)
+            else:
+                gl.glColor3f(0.2, 0.25, 0.5)
             gl.glLineWidth(2.0)
             gl.glBegin(gl.GL_LINE_LOOP)
             gl.glVertex3f(x0, y0, 0.0)
@@ -417,20 +535,29 @@ class View3D:
 
     def _draw_equipment(self):
         size = max(self._camera.radius * 0.012, 1.5)
-        for e in self._scene.equipment:
-            gl.glColor3f(0.2, 0.85, 0.2)
+        for i, e in enumerate(self._scene.equipment):
+            is_sel = (self._selected is not None
+                      and self._selected['type'] == 'eqmt'
+                      and self._selected['index'] == i)
+            if is_sel:
+                gl.glColor3f(1.0, 1.0, 0.0)
+            else:
+                gl.glColor3f(0.2, 0.85, 0.2)
             self._draw_box(e["x"], e["y"], e["z"], size)
 
     def _draw_receivers(self):
-        for r in self._scene.receivers:
+        for i, r in enumerate(self._scene.receivers):
+            is_sel = (self._selected is not None
+                      and self._selected['type'] == 'rcvr'
+                      and self._selected['index'] == i)
             level = r["level"]
             if level is not None:
                 clamped = max(40.0, min(90.0, level))
                 size = 2.0 + (clamped - 40.0) / 50.0 * 6.0
-                gl.glColor3f(0.9, 0.15, 0.15)
+                gl.glColor3f(1.0, 1.0, 0.0) if is_sel else gl.glColor3f(0.9, 0.15, 0.15)
             else:
                 size = 2.0
-                gl.glColor3f(0.55, 0.55, 0.55)
+                gl.glColor3f(1.0, 1.0, 0.0) if is_sel else gl.glColor3f(0.55, 0.55, 0.55)
             base_size = max(self._camera.radius * 0.008, 1.0)
             radius = base_size * (size / 4.0)
             self._draw_sphere(r["x"], r["y"], r["z"], radius)
@@ -578,6 +705,7 @@ class View3D:
             shift = mods & glfw.MOD_SHIFT
             ctrl = mods & glfw.MOD_CONTROL
             if button == glfw.MOUSE_BUTTON_LEFT:
+                self._pick_start = (x, y)
                 if shift:
                     self._mouse_button = "pan"
                 elif ctrl:
@@ -589,6 +717,11 @@ class View3D:
             elif button == glfw.MOUSE_BUTTON_RIGHT:
                 self._mouse_button = "dolly"
         elif action == glfw.RELEASE:
+            if button == glfw.MOUSE_BUTTON_LEFT and self._pick_start is not None:
+                x, y = glfw.get_cursor_pos(window)
+                if math.hypot(x - self._pick_start[0], y - self._pick_start[1]) < 5.0:
+                    self._pick(x, y)
+                self._pick_start = None
             self._mouse_button = None
             self._mouse_last = None
 
@@ -635,9 +768,21 @@ class View3D:
             elif key == glfw.KEY_R:
                 if self._reload_callback is not None:
                     self.request_reload(self._reload_callback())
+            elif key == glfw.KEY_X:
+                self._snap_camera_axis('X')
+            elif key == glfw.KEY_Y:
+                self._snap_camera_axis('Y')
+            elif key == glfw.KEY_Z:
+                self._snap_camera_axis('Z')
 
     def _on_scroll(self, window, xoff, yoff):
-        self._camera.zoom(0.9 ** yoff)
+        factor = 0.9 ** yoff
+        hit = self._cursor_world_hit(*glfw.get_cursor_pos(window))
+        if hit is not None:
+            # Nudge target toward cursor hit proportional to zoom step,
+            # keeping the world point under the cursor approximately stationary.
+            self._camera.target += (hit - self._camera.target) * (1.0 - factor)
+        self._camera.zoom(factor)
 
     def _on_resize(self, window, w, h):
         self._viewport_size = (max(w, 1), max(h, 1))
