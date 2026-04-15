@@ -67,7 +67,7 @@ class OrbitCamera:
     def __init__(self):
         self.target = np.array([0.0, 0.0, 0.0])
         self.radius = 300.0
-        self.azimuth = 270.0   # degrees around Z axis (S camera, looking N → world +X goes right)
+        self.azimuth = 90.0   # degrees around Z axis (S camera, looking N → world +X goes right)
         self.elevation = 30.0  # degrees above XY plane
         self.fov = 45.0
 
@@ -96,8 +96,8 @@ class OrbitCamera:
         gl.glLoadIdentity()
         pos = self.position()
         glu.gluLookAt(
-            pos[0], pos[1], pos[2],
-            self.target[0], self.target[1], self.target[2],
+            pos[0], -pos[1], pos[2],                          # negate Y: canvas Y-down → GL Y-up
+            self.target[0], -self.target[1], self.target[2],  # negate Y: same convention
             0.0, 0.0, 1.0,  # Z-up
         )
 
@@ -134,13 +134,13 @@ class View3D:
         self._ground_img_h = 0
         self._scene_bounds = {"x_min": 0, "x_max": 100, "y_min": 0, "y_max": 100}
         self._label_cache = {}  # text -> (tex_id, w, h)
-        self._ortho = False
+        self._ortho = True
         self._pending_scene = None   # set from any thread; consumed in _render()
         self._reload_callback = None  # callable() → SceneData; set by caller
         self._selected      = None   # {'type': 'eqmt'|'rcvr'|'barrier', 'index': int, 'pos': np.array}
         self._pick_start    = None   # (mx, my) of left-click press, for click-vs-drag detection
         self._axis_state    = {}     # {'X': bool, ...} — False=positive side, True=negative
-        self._draw_mv       = None   # GL_MODELVIEW_MATRIX captured after glScale each frame
+        self._draw_mv       = None   # GL_MODELVIEW_MATRIX captured after camera.apply() each frame
         self._draw_proj     = None   # GL_PROJECTION_MATRIX captured each frame
         self._draw_viewport = None   # GL_VIEWPORT captured each frame
 
@@ -271,8 +271,9 @@ class View3D:
             self._camera.azimuth   = 270.0 if flipped else 90.0
             self._camera.elevation = 0.0
         elif axis == 'Z':
-            self._camera.azimuth   = 270.0
-            self._camera.elevation = -89.0 if flipped else 89.0
+            self._camera.azimuth   = 90
+            # self._camera.elevation = -89.0 if flipped else 89.0
+            self._camera.elevation = 89
 
         if self._selected is not None:
             self._camera.target = self._selected['pos'].copy()
@@ -397,9 +398,9 @@ class View3D:
         self._camera.apply(w, h, ortho=self._ortho)
 
         gl.glPushMatrix()
-        gl.glScale(1.0, -1.0, 1.0) # Flip X-axis, keep Y and Z the same
+        gl.glScale(1.0, -1.0, 1.0)  # flip canvas Y-down to GL Y-up
 
-        # Cache matrices for picking and zoom-toward-cursor (must be after the Y-flip scale)
+        # Cache matrices for picking and zoom-toward-cursor (after Y-flip scale)
         self._draw_mv       = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
         self._draw_proj     = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
         self._draw_viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
@@ -496,9 +497,7 @@ class View3D:
             is_sel = (self._selected is not None
                       and self._selected['type'] == 'barrier'
                       and self._selected['index'] == i)
-            h = max(b["z0"], b["z1"])
-            if h <= 0:
-                h = 10.0
+            h0, h1 = b["z0"], b["z1"]
             x0, y0, x1, y1 = b["x0"], b["y0"], b["x1"], b["y1"]
 
             dx, dy = x1 - x0, y1 - y0
@@ -514,8 +513,8 @@ class View3D:
             gl.glNormal3f(nx, ny, 0.0)
             gl.glVertex3f(x0, y0, 0.0)
             gl.glVertex3f(x1, y1, 0.0)
-            gl.glVertex3f(x1, y1, h)
-            gl.glVertex3f(x0, y0, h)
+            gl.glVertex3f(x1, y1, h1)
+            gl.glVertex3f(x0, y0, h0)
             gl.glEnd()
 
             gl.glDisable(gl.GL_LIGHTING)
@@ -527,8 +526,8 @@ class View3D:
             gl.glBegin(gl.GL_LINE_LOOP)
             gl.glVertex3f(x0, y0, 0.0)
             gl.glVertex3f(x1, y1, 0.0)
-            gl.glVertex3f(x1, y1, h)
-            gl.glVertex3f(x0, y0, h)
+            gl.glVertex3f(x1, y1, h1)
+            gl.glVertex3f(x0, y0, h0)
             gl.glEnd()
             gl.glLineWidth(1.0)
             gl.glEnable(gl.GL_LIGHTING)
