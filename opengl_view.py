@@ -752,8 +752,8 @@ class View3D:
             right_x = -math.sin(az)
             right_y =  math.cos(az)
             # Camera forward in XY: direction from camera toward target, projected flat
-            fwd_x = -math.cos(az)
-            fwd_y = -math.sin(az)
+            fwd_x = math.cos(az)
+            fwd_y = math.sin(az)
             # Drag right → scene moves right; drag down → scene moves forward
             self._camera.target[0] += right_x * dx * scale
             self._camera.target[1] += right_y * dx * scale
