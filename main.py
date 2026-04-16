@@ -2795,7 +2795,7 @@ class Pane_Eqmt_Info(tk.Frame):
                 if barCalcListNum > len(self.barrierListForExcelOutput) - 1:
                     break
                 if not self.barrierListForExcelOutput[barCalcListNum]:
-                    row[col].value = 0
+                    row[col].value = None
                 else:
                     row[col].value = self.barrierListForExcelOutput[barCalcListNum][0]
                     print(self.barrierListForExcelOutput[barCalcListNum][0])
