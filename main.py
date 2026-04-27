@@ -347,6 +347,7 @@ class FuncVars(object):
             self.scale_line_distance_px = SCALE_LINE_DISTANCE_PX_CELL.value
         self.master_scale = self.known_distance_ft / self.scale_line_distance_px
         self.quickdraw_bool = tk.IntVar()
+        self.quickdraw_bool.set(True)
         self.e_to_r_shapes_bool = tk.BooleanVar()
         self.use_specific_bar_bool = tk.BooleanVar()
         self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL)
