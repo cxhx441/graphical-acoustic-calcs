@@ -66,6 +66,9 @@ BAR_Z1_COORD = ws["AF"]
 KNOWN_DISTANCE_FT_CELL = ws["AE20"]
 SCALE_LINE_DISTANCE_PX_CELL = ws["AF20"]
 
+# IMAGE HEIGHT FOR 3D VIEW
+IMAGE_HEIGHT_3D_VIEW = ws["AF21"].value
+
 # BAR BOOLS
 USE_SPECIFIC_BAR_BOOL      = ws["AC19"].value
 TAKE_ARI_BARRIER           = ws["AC20"].value
@@ -1224,6 +1227,7 @@ class Pane_Toolbox(tk.Frame):
                 master_scale=self.parent.func_vars.master_scale,
                 image_size_factor=self.parent.editor.image_size_factor,
                 image_path=BED_IMAGE_FILEPATH,
+                image_height=IMAGE_HEIGHT_3D_VIEW
             )
 
         # If already open, reload scene data in-place (camera preserved)

@@ -13,7 +13,7 @@ class SceneData:
     """Thread-safe snapshot of scene objects. Copy-on-create from main thread."""
 
     def __init__(self, equipment_list, receiver_list, barrier_list, e_to_r_list,
-                 master_scale=1.0, image_size_factor=1.0, image_path="bed_image.png"):
+                 master_scale=1.0, image_size_factor=1.0, image_path="bed_image.png", image_height=0):
         self.equipment = [
             {"tag": e.eqmt_tag, "x": e.x_coord, "y": e.y_coord, "z": e.z_coord}
             for e in equipment_list
@@ -59,6 +59,8 @@ class SceneData:
         self.master_scale = master_scale  # feet per pixel
         self.image_size_factor = image_size_factor
         self.image_path = image_path
+        self.image_height = image_height
+
 
 
 class OrbitCamera:
@@ -432,7 +434,8 @@ class View3D:
         gl.glBindTexture(gl.GL_TEXTURE_2D, self._ground_tex)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         # Drawn slightly below Z=0 to avoid z-fighting with barrier bases
-        z = -0.05
+        z = -0.05 + self._scene.image_height
+
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 0.0); gl.glVertex3f(0.0,     0.0,     z)
         gl.glTexCoord2f(1.0, 0.0); gl.glVertex3f(w_world, 0.0,     z)
