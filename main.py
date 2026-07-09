@@ -15,6 +15,7 @@ import BarrierPlotExporter
 
 BED_IMAGE_FILEPATH = "bed_image.png"
 XL_FILEPATH = "WCV - PL - 2025.04.06.xlsm"
+SHEET_NAME = "Input LwA_XYZ"
 XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 12 bold"
@@ -23,7 +24,7 @@ BAR_IL_FONT = "Helvetica 14"
 # setting columns
 shutil.copyfile(XL_FILEPATH, XL_TEMP_FILEPATH)
 wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
-ws = wb["Input LwA_XYZ"]
+ws = wb[SHEET_NAME]
 EQMT_COUNT = ws["A"]
 EQMT_TAG = ws["B"]
 PATH = ws["C"]
@@ -2755,7 +2756,7 @@ class Pane_Eqmt_Info(tk.Frame):
 
     def onExportListButton(self):
         wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, keep_vba=True, data_only=False)
-        ws = wb["Input LwA_XYZ"]
+        ws = wb[SHEET_NAME]
 
         # eqmt
         for obj in self.parent.func_vars.equipment_list:
