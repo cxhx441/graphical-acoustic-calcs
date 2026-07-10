@@ -129,7 +129,7 @@ def RCLevel(levelsFrom63to8k_OB):
     hz1000 = ob[4]
     hz2000 = ob[5]
     rc = (hz500 + hz1000 + hz2000) / 3.0 # RC = avg 500, 1k, 2k
-    rc_curve = [ rc + (5 * i) for i in range(-4, 4) ] # 5dB/octave slope from 1khz
+    rc_curve = [ rc + (5 * i) for i in range(4, -4, -1) ] # -5dB/octave slope from 1khz
     diff = [ max(0, ob_val - rc_val) for (ob_val, rc_val) in zip(ob, rc_curve)]
     rumbly = any( [ lvl > 5 for lvl in diff[:4]] ) # lvls @ <= 500Hz exceeds curve by greater than 5 dB
     hissy = any( [ lvl >= 3 for lvl in diff[4:]] ) # lvls @ >= 1kHz exceeds curve by greater than 3 dB
