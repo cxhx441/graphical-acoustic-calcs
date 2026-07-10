@@ -12,6 +12,7 @@ import tkinter.font
 import acoustics
 import csv
 import BarrierPlotExporter
+from collections import defaultdict
 
 BED_IMAGE_FILEPATH = "bed_image.png"
 XL_FILEPATH = "WCV - PL - 2025.04.06.xlsm"
@@ -19,12 +20,15 @@ SHEET_NAME = "Input LwA_XYZ"
 XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 12 bold"
+DEMO_GRID_FONT = "Helvetica 24 bold"
+GRID_FONT = "Helvetica 24 bold"
 BAR_IL_FONT = "Helvetica 14"
 
 # setting columns
 shutil.copyfile(XL_FILEPATH, XL_TEMP_FILEPATH)
 wb = openpyxl.load_workbook(XL_TEMP_FILEPATH, data_only=True)
 ws = wb[SHEET_NAME]
+ws_tl = wb["TL"]
 EQMT_COUNT = ws["A"]
 EQMT_TAG = ws["B"]
 PATH = ws["C"]
@@ -89,6 +93,9 @@ DIRECTIVITY_MATRIX_ROW = 2  # 1-index based
 SPECIFIC_BAR_MATRIX_COL = 91  # 1-index based
 SPECIFIC_BAR_MATRIX_ROW = 2  # 1-index based
 
+# ROW/COLs for TL MATRICES
+ROOF_ASSEMBLY_COL = 2 # 1-index based
+ROOF_ASSEMBLY_ROW = 3 # 1-index based
 
 # ROW/COL VALUES FOR Export List Button
 EQMT_NAME_COL = 1
@@ -110,6 +117,157 @@ BAR_Z1_COORD_COL = 31
 
 BAR_IL_COL_RANGE = range(73, 88)
 
+
+
+OCTAVE_BAND_HZ = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+
+def RCLevel(levelsFrom63to8k_OB):
+    """ RC should take 16Hz to 4kHz but I'm working with what I have. """
+    ob = levelsFrom63to8k_OB
+    # print(ob)
+    hz500 = ob[3]
+    hz1000 = ob[4]
+    hz2000 = ob[5]
+    rc = (hz500 + hz1000 + hz2000) / 3.0 # RC = avg 500, 1k, 2k
+    rc_curve = [ rc + (5 * i) for i in range(-4, 4) ] # 5dB/octave slope from 1khz
+    diff = [ max(0, ob_val - rc_val) for (ob_val, rc_val) in zip(ob, rc_curve)]
+    rumbly = any( [ lvl > 5 for lvl in diff[:4]] ) # lvls @ <= 500Hz exceeds curve by greater than 5 dB
+    hissy = any( [ lvl >= 3 for lvl in diff[4:]] ) # lvls @ >= 1kHz exceeds curve by greater than 3 dB
+    classifier = []
+    if rumbly is False and hissy is False:
+        classifier.append("N")
+    if rumbly is True:
+        classifier.append("R")
+    if hissy is True:
+        classifier.append("H")
+    classifier = "".join(classifier)
+    # print(rc, classifier)
+    return (rc, classifier)
+
+
+NC_CURVES = {
+    15: [47.0, 36.0, 29.0, 22.0, 17.0, 14.0, 12.0, 11.0],
+    20: [51.0, 40.0, 33.0, 26.0, 22.0, 19.0, 17.0, 16.0],
+    25: [54.0, 44.0, 37.0, 31.0, 27.0, 24.0, 22.0, 21.0],
+    30: [57.0, 48.0, 41.0, 35.0, 31.0, 29.0, 28.0, 27.0],
+    35: [60.0, 52.0, 45.0, 40.0, 36.0, 34.0, 33.0, 32.0],
+    40: [64.0, 56.0, 50.0, 45.0, 41.0, 39.0, 38.0, 37.0],
+    45: [67.0, 60.0, 54.0, 49.0, 46.0, 44.0, 43.0, 42.0],
+    50: [71.0, 64.0, 58.0, 54.0, 51.0, 49.0, 48.0, 47.0],
+    55: [74.0, 67.0, 62.0, 58.0, 56.0, 54.0, 53.0, 52.0],
+    60: [77.0, 71.0, 67.0, 63.0, 61.0, 59.0, 58.0, 57.0],
+    65: [80.0, 75.0, 71.0, 68.0, 66.0, 64.0, 63.0, 62.0],
+    70: [83.0, 79.0, 75.0, 72.0, 71.0, 70.0, 69.0, 68.0],
+}
+
+def nc_curve(nc):
+    return NC_CURVES.get(nc)
+
+def nc(levels):
+    """
+    It returns the NC curve of `levels`. If `levels` is upper than NC-70
+    returns '70+'.
+
+    Parameter:
+
+    levels: 1-D NumPy array containing values between 63 Hz and 8 kHz in octave
+    bands.
+    """
+    nc_range = range(15, 71, 5)
+    for nc_test in nc_range:
+        curve = NC_CURVES.get(nc_test)
+        if all([l <= c for l, c in zip(levels, curve)]):
+            break
+        if nc_test == 70:
+            nc_test = "70+"
+            break
+    return nc_test  # pylint: disable=undefined-loop-variable
+
+def NCLevel(levelsFrom63to8k_OB, controllingBand=False):
+    """
+    this works by getting the NC curve completely above all the input values and then subtracts. A better way may be to start at the bottom and work up.
+    it tests which curve is closer, the upper or the lower, then used the appropriate helper function to interpolate
+    """
+    NC_high = nc(levelsFrom63to8k_OB)
+    if NC_high == "70+":
+        return "70+" if not controllingBand else "70+ (NA)"
+    NC_low = NC_high - 5
+
+    NC_high_curve = NC_CURVES.get(NC_high)
+    NC_low_curve = NC_CURVES.get(NC_low)
+
+    if all([x <= y for x, y in zip(levelsFrom63to8k_OB, NC_CURVES[15])]):
+        if not controllingBand:
+            return 15
+        else:
+            return "15 (NA)"
+
+    if all([x == y for x, y in zip(levelsFrom63to8k_OB, NC_CURVES[NC_high])]):
+        if not controllingBand:
+            return NC_high
+        else:
+            return f"{NC_high} (NA)"
+
+    which = "low"
+    for i in range(len(NC_high_curve)):
+        if (
+            levelsFrom63to8k_OB[i] - NC_low_curve[i]
+            > (NC_high_curve[i] - NC_low_curve[i]) / 2
+        ):
+            which = "high"
+
+    if which == "high":
+        return NCLevel_startFromUpperCurve(levelsFrom63to8k_OB, controllingBand)
+
+    else:
+        return NCLevel_startFromLowerCurve(levelsFrom63to8k_OB, controllingBand)
+
+def NCLevel_startFromUpperCurve(levelsFrom63to8k_OB, controllingBand=False):
+    """
+    this works by getting the NC curve completely above all the input values and then subtracts.
+    """
+    NC_roundedUpRating = nc(levelsFrom63to8k_OB)
+    NC_roundedUpCurve = NC_CURVES.get(NC_roundedUpRating)
+
+    # NC_CurveLevel_Difference = NC_roundedUpCurve - levelsFrom63to8k_OB
+    NC_CurveLevel_Difference = [
+        nc - v
+        for nc, v in zip(NC_roundedUpCurve, [round(x) for x in levelsFrom63to8k_OB])
+    ]
+    NC_shifted = NC_roundedUpRating - min(NC_CurveLevel_Difference)
+
+    if not controllingBand:
+        return int(NC_shifted)
+    else:
+        controllingBand_idx = NC_CurveLevel_Difference.index(
+            min(NC_CurveLevel_Difference)
+        )
+        return f" {int(NC_shifted)} ({OCTAVE_BAND_HZ[controllingBand_idx]}Hz)"
+
+
+def NCLevel_startFromLowerCurve(levelsFrom63to8k_OB, controllingBand=False):
+    """
+    this works by getting the NC curve completely below all the input values and then adds.
+    """
+    NC_roundedUpRating = (
+        nc(levelsFrom63to8k_OB) - 5
+    )  # this -5 is what makes it start from the lower curve
+    NC_roundedUpCurve = NC_CURVES.get(NC_roundedUpRating)
+
+    # NC_CurveLevel_Difference = NC_roundedUpCurve - levelsFrom63to8k_OB
+    NC_CurveLevel_Difference = [
+        nc - v
+        for nc, v in zip(NC_roundedUpCurve, [round(x) for x in levelsFrom63to8k_OB])
+    ]
+    NC_shifted = NC_roundedUpRating - min(NC_CurveLevel_Difference)
+
+    if not controllingBand:
+        return int(NC_shifted)
+    else:
+        controllingBand_idx = NC_CurveLevel_Difference.index(
+            min(NC_CurveLevel_Difference)
+        )
+        return f" {int(NC_shifted)} ({OCTAVE_BAND_HZ[controllingBand_idx]}Hz)"
 
 class FuncVars(object):
     def __init__(self, parent):
@@ -264,6 +422,32 @@ class FuncVars(object):
                 )
             )
 
+        # Grab roof assembly / TL details
+        self.roof_assembly_dict = defaultdict(lambda: [0] * len(OCTAVE_BAND_HZ))
+        self.roof_assembly_dict["None"] = [ 0 ] * len(OCTAVE_BAND_HZ)
+        currow = ROOF_ASSEMBLY_ROW
+        while ws_tl.cell(row=currow, column=ROOF_ASSEMBLY_COL).value is not None:
+            assembly = ws_tl.cell(row=currow, column=ROOF_ASSEMBLY_COL).value
+            tl = []
+            for i in range(len(OCTAVE_BAND_HZ)):
+                tl_cur_hz = ws_tl.cell(row=currow, column=ROOF_ASSEMBLY_COL + 1 + i).value
+                if tl_cur_hz is None:
+                    raise ValueError(
+                        f"Missing TL value for roof assembly '{assembly}' "
+                        f"at {OCTAVE_BAND_HZ[i]} Hz (row {currow})"
+                    )
+                tl.append(tl_cur_hz)
+            self.roof_assembly_dict[assembly] = tl
+            currow += 1
+
+        try:
+            self.selected_roof_assembly = list(self.roof_assembly_dict)[1]
+        except IndexError:
+            self.selected_roof_assembly = None
+
+        self.grid_outline_coords = None
+        self.grid_receiver_coords = []
+        self.grid_receivers_on_canvas = []
         # for eqmt_to_rcvr_shapes drawing
         self.e_to_r_with_bar = dict()
         for eqmt in self.equipment_list:
@@ -353,6 +537,11 @@ class FuncVars(object):
         self.quickdraw_bool = tk.IntVar()
         self.quickdraw_bool.set(True)
         self.e_to_r_shapes_bool = tk.BooleanVar()
+        self.grid_uses_nc_bool = tk.BooleanVar()
+        self.grid_uses_nc_bool.set(True)
+        self.grid_color_only_bool = tk.BooleanVar()
+        self.grid_color_only_bool.set(False)
+        self.draw_grid_legend_bool = tk.BooleanVar()
         self.use_specific_bar_bool = tk.BooleanVar()
         self.use_specific_bar_bool.set(USE_SPECIFIC_BAR_BOOL)
 
@@ -534,7 +723,7 @@ class Editor(tk.Frame):
         self.hScrollbar.grid(row=1, column=0, sticky=tk.E + tk.W)
         """scroll bar setup"""
 
-        self.initialize_eqmt_rcvr_barrier_drawings()
+        self.initialize_eqmt_rcvr_barrier_grid_drawings()
 
         self.temp_rect = None
         self.temp_line = None
@@ -550,9 +739,8 @@ class Editor(tk.Frame):
         self.canvas.bind("<Enter>", self._bound_to_mousewheel)
         self.canvas.bind("<Leave>", self._unbound_to_mousewheel)
 
-    def initialize_eqmt_rcvr_barrier_drawings(self):
-        """initialize receivers and equipment boxes and barriers"""
-        fontsize = 10
+    def initialize_eqmt_rcvr_barrier_grid_drawings(self):
+        """initialize receivers / equipment boxes,  grid and barriers """
         for eqmt in self.parent.func_vars.equipment_list:
             green_hex_color = utils.rgb_to_hex((0, 254, 0))
             offset = 20
@@ -610,7 +798,99 @@ class Editor(tk.Frame):
                 font=DRAWING_FONT,
                 fill="Black",
             )
-        """initialize receivers and equipment boxes and barriers"""
+
+        # colorscale = lower bound of each colored bucket; the last bound (70)
+        # is the "70+" bucket (NC tops out at 70+). colorlist[0] colors levels
+        # below the first bound; colorlist[i+1] colors the bucket at colorscale[i].
+        self.colorscale = [x for x in range(25, 75, 5)]  # [25, 30, ..., 70]
+        self.colorlist = [
+            "cyan3",       # < 25
+            "green3",      # 25-29
+            "blue",        # 30-34
+            "yellow3",     # 35-39
+            "DarkOrange1", # 40-44
+            "OrangeRed2",  # 45-49
+            "maroon2",     # 50-54
+            "purple",      # 55-59
+            "grey",        # 60-64
+            "gray40",      # 65-69
+            "black",       # 70+
+        ]
+        if len(self.colorscale) + 1 != len(self.colorlist):
+            print(f"colorscale_len: {len(self.colorscale)}")
+            print(f"colorlist_len: {len(self.colorlist)}")
+            raise ValueError("colorscale and colorlist not aligned.")
+
+        # redraw grid
+        if self.parent.func_vars.grid_outline_coords is not None:
+            coords = self.parent.func_vars.grid_outline_coords
+            self.grid_rect = self.canvas.create_rectangle(
+                self.world_to_px(coords[0]),
+                self.world_to_px(coords[1]),
+                self.world_to_px(coords[2]),
+                self.world_to_px(coords[3]),
+                outline="green",
+                width=5,
+                tag="grid_rect",
+            )
+        # HEATMAP_COLORS = [
+        #     "#0F52BA",  # < 30       sapphire blue
+        #     "#00B7EB",  # 30-34      electric cyan
+        #     "#00FF7F",  # 35-39      spring green
+        #     "#FFEA00",  # 40-44      vivid yellow
+        #     "#FF8C00",  # 45-49      bright orange
+        #     "#FF1744",  # 50-54      hot red-pink
+        #     "#B900FF",  # > 55       electric purple/magenta
+        # ]
+
+        # def get_heat_color(value):
+        #     if value < 30:
+        #         return HEATMAP_COLORS[0]
+        #     elif value >= 55:
+        #         return HEATMAP_COLORS[-1]
+        #     else:
+        #         idx = 1 + (int(value) - 30) // 5
+        #         idx = min(idx, len(HEATMAP_COLORS) - 2)
+        #     return HEATMAP_COLORS[idx]
+
+        for grid_rcvr in self.parent.func_vars.grid_receiver_coords:
+            x = self.parent.editor.world_to_px(grid_rcvr[0])
+            y = self.parent.editor.world_to_px(grid_rcvr[1])
+            classifier = ""
+            font = GRID_FONT
+            if self.parent.pane_toolbox.combobox_grid_metric.get() == "RC":
+                font = DRAWING_FONT
+                classifier = grid_rcvr[3]
+
+            # NC can be the string "70+"; treat it as off the top of the scale
+            # for coloring and keep the label text as-is
+            level_str = grid_rcvr[2]
+            try:
+                level = float(level_str)
+                print_level = str(int(round(level)))
+            except ValueError:
+                level = float("inf")
+                print_level = level_str
+
+            textcolor = self.colorlist[0]
+            for colorrange, color in zip(self.colorscale, self.colorlist[1:]):
+                if level >= colorrange:
+                    textcolor = color
+
+            if self.parent.func_vars.grid_color_only_bool.get() is True:
+                ofs = self.parent.func_vars.grid_spacing / 2.0
+                ofs = self.parent.editor.world_to_px(ofs)
+                gr_id = self.canvas.create_rectangle(
+                    x-ofs, y-ofs, x+ofs, y+ofs, fill=textcolor, width=0)
+            else:
+                gr_id = self.parent.editor.canvas.create_text(
+                    (x, y),
+                    text=print_level+classifier,
+                    font=font,
+                    fill=textcolor,
+                )
+            self.parent.func_vars.grid_receivers_on_canvas.append(gr_id)
+
 
     def _bound_to_mousewheel(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
@@ -682,7 +962,14 @@ class Editor(tk.Frame):
         for bar in self.parent.func_vars.barrier_list:
             self.canvas.delete(bar.barrier_name)
 
-        self.initialize_eqmt_rcvr_barrier_drawings()
+        # delete grid components (delete-by-tag is a safe no-op if not drawn)
+        self.canvas.delete("grid_rect")
+
+        for gr_id in self.parent.func_vars.grid_receivers_on_canvas:
+            self.canvas.delete(gr_id)
+        self.parent.func_vars.grid_receivers_on_canvas.clear()
+
+        self.initialize_eqmt_rcvr_barrier_grid_drawings()
         self.parent.pane_toolbox.draw_eqmt_to_rcvr_shapes()
 
     def get_angle(self, x, y):
@@ -729,6 +1016,12 @@ class Editor(tk.Frame):
     def drawing_grid_leftMouseRelease(self, event):
         self.get_current_mouse_pos(event)
         self.canvas.delete(self.temp_rect)
+        self.parent.func_vars.grid_outline_coords = [
+            self.px_to_world(self.x0),
+            self.px_to_world(self.y0),
+            self.px_to_world(self.curX),
+            self.px_to_world(self.curY)
+            ]
         self.grid_rect = self.canvas.create_rectangle(
             self.x0,
             self.y0,
@@ -1170,6 +1463,48 @@ class Pane_Toolbox(tk.Frame):
             command=self.draw_eqmt_to_rcvr_shapes,
             font=(None, 15),
         )
+        # self.checkbox_grid_uses_nc = tk.Checkbutton(
+        #     self,
+        #     text="grid_uses_nc",
+        #     variable=self.parent.func_vars.grid_uses_nc_bool,
+        #     onvalue=True,
+        #     offvalue=False,
+        #     command=self.update_grid,
+        #     font=(None, 15),
+        # )
+        self.combobox_grid_metric = tkinter.ttk.Combobox(
+            self,
+            values=["NC", "dBA", "RC"],
+            state="readonly"
+        )
+        self.combobox_grid_metric.set("NC")
+        self.combobox_roof_assembly = tkinter.ttk.Combobox(
+            self,
+            values=[x for x in self.parent.func_vars.roof_assembly_dict.keys()],
+            state="readonly"
+        )
+        try:
+            self.combobox_roof_assembly.set(list(self.parent.func_vars.roof_assembly_dict.keys())[1])
+        except IndexError:
+            self.combobox_roof_assembly.set("None")
+        self.checkbox_grid_legend = tk.Checkbutton(
+            self,
+            text="Draw Grid Legend",
+            variable=self.parent.func_vars.draw_grid_legend_bool,
+            onvalue=True,
+            offvalue=False,
+            command=self.draw_grid_legend,
+            font=(None, 15),
+        )
+        self.checkbox_grid_color_only = tk.Checkbutton(
+            self,
+            text="Grid w/ Colors Only",
+            variable=self.parent.func_vars.grid_color_only_bool,
+            onvalue=True,
+            offvalue=False,
+            command=self.update_grid,
+            font=(None, 15),
+        )
         self.button_draw_grid = tk.Button(
             self, text="Draw Grid", command=self.draw_grid, font=(None, 15)
         )
@@ -1194,10 +1529,70 @@ class Pane_Toolbox(tk.Frame):
         self.checkbox_quickdraw.grid(row=3, column=1, sticky=tk.N + tk.W)
         self.checkbox_specific_barrier.grid(row=4, column=1, sticky=tk.N + tk.W)
         self.checkbox_e_to_r_shapes.grid(row=5, column=1, sticky=tk.N + tk.W)
+        # self.checkbox_grid_uses_nc.grid(row=6, column=1, sticky=tk.N + tk.W)
+        self.combobox_grid_metric.grid(row=6, column=1, sticky=tk.N + tk.W)
+        self.combobox_roof_assembly.grid(row=7, column=1, sticky=tk.N + tk.W)
+        self.checkbox_grid_legend.grid(row=8, column=1, sticky=tk.N + tk.W)
+        self.checkbox_grid_color_only.grid(row=9, column=1, sticky=tk.N + tk.W)
         self.button_draw_grid.grid(row=0, column=2, sticky=tk.N + tk.W)
         self.button_update_grid.grid(row=1, column=2, sticky=tk.N + tk.W)
         self.button_export_bar_file.grid(row=2, column=2, sticky=tk.N + tk.W)
         self.button_view_3d.grid(row=3, column=2, sticky=tk.N + tk.W)
+
+        self.combobox_roof_assembly.bind("<<ComboboxSelected>>", self.update_selected_roof_assembly)
+        self.combobox_grid_metric.bind("<<ComboboxSelected>>", self.update_grid_per_metric_change)
+
+        self.demo_grid_drawings = []
+
+    def update_grid_per_metric_change(self, event):
+        self.update_grid()
+
+    def draw_grid_legend(self):
+
+        if self.parent.func_vars.draw_grid_legend_bool.get() is False:
+            for item in self.demo_grid_drawings:
+                self.parent.editor.canvas.delete(item)
+            self.demo_grid_drawings.clear()
+            return
+
+        # colorscale is the lower bound of each bucket; the last bound is the
+        # "70+" overflow. Labels: "<min", "lo-hi" per interior bucket, "70+".
+        colorscale = self.parent.editor.colorscale
+        scale_txt = [f"<{colorscale[0]}"]
+        for i in range(len(colorscale) - 1):
+            scale_txt.append(f"{colorscale[i]}-{colorscale[i + 1] - 1}")
+        scale_txt.append(f"{colorscale[-1]}+")
+
+        height = 0
+        offset = 55
+        x_start = -offset
+        y_start = offset*2
+        colorlist = self.parent.editor.colorlist
+        for txt, color in zip(scale_txt, colorlist):
+            txt_color = "black"
+            if color in ("black", "gray40"):
+                txt_color = "white"
+
+            shape1 = self.parent.editor.canvas.create_rectangle(
+                x_start - offset,
+                y_start + height - offset,
+                x_start + offset,
+                y_start + height + offset,
+                fill=color,
+            )
+            shape2 = self.parent.editor.canvas.create_text(
+                x_start,
+                y_start + height,
+                text=txt,
+                font=DEMO_GRID_FONT,
+                fill=txt_color
+            )
+            height += offset * 2
+            self.demo_grid_drawings += [shape1, shape2]
+
+    def update_selected_roof_assembly(self, event):
+        self.parent.func_vars.selected_roof_assembly = self.combobox_roof_assembly.get()
+        self.update_grid()
 
     def specificbar_update_est_noise_levels(self):
         self.parent.pane_eqmt_info.update_est_noise_levels()
@@ -1359,18 +1754,39 @@ class Pane_Toolbox(tk.Frame):
             "<ButtonRelease-1>", self.parent.editor.drawing_grid_leftMouseRelease
         )
 
-        self.parent.pane_eqmt_info.status_label.configure(text="Status: Drawing Grid")
+        # DEFAULT GRID
+        w = self.parent.editor.imageWidth * self.parent.editor.zoom_factor
+        h = self.parent.editor.imageHeight * self.parent.editor.zoom_factor
+        self.parent.func_vars.grid_outline_coords = [
+            self.parent.editor.px_to_world(0),
+            self.parent.editor.px_to_world(0),
+            self.parent.editor.px_to_world(w),
+            self.parent.editor.px_to_world(h)
+            ]
+        self.parent.editor.grid_rect = self.parent.editor.canvas.create_rectangle(
+            0,
+            0,
+            w,
+            h,
+            outline="green",
+            width=5,
+            tag="grid_rect",
+        )
+
+        self.parent.pane_eqmt_info.status_label.configure(text="Status: Drawing Grid-- input elevation, spacing(ft)")
         self.parent.pane_eqmt_info.entryBox1.delete(0, "end")
-        self.parent.pane_eqmt_info.entryBox1.insert(0, "elevation, spacing (ft)")
+        self.parent.pane_eqmt_info.entryBox1.insert(0, "0, 5")
 
         self.parent.pane_eqmt_info.entryBox1.focus()
 
     def update_grid(self):
-        self.parent.editor.canvas.delete("grid_level")
         inputdata = self.parent.pane_eqmt_info.entryBox1.get()
-        inputdata_list = inputdata.split(", ")
-        grid_elevation = int(inputdata_list[0])
-        spacing = int(inputdata_list[1])
+        inputdata_list = inputdata.split(",")
+        self.parent.func_vars.grid_elevation = float(inputdata_list[0])
+        self.parent.func_vars.grid_spacing = float(inputdata_list[1])
+        grid_elevation = self.parent.func_vars.grid_elevation
+        spacing = self.parent.func_vars.grid_spacing
+
         grid_rect_coords = self.parent.editor.canvas.coords(
             self.parent.editor.grid_rect
         )
@@ -1384,171 +1800,256 @@ class Pane_Toolbox(tk.Frame):
         cur_y_coord_ft = start_y_coord_ft
         while cur_y_coord_ft < end_y_coord_ft:
             while cur_x_coord_ft < end_x_coord_ft:
-                grid_receiver_list.append([cur_x_coord_ft, cur_y_coord_ft, "0"])
+                grid_receiver_list.append([cur_x_coord_ft, cur_y_coord_ft, "0", ""]) #coords, lvl, rc_classifier
                 cur_x_coord_ft += spacing
             cur_y_coord_ft += spacing
             cur_x_coord_ft = start_x_coord_ft
-        print(grid_receiver_list)
+        # print(grid_receiver_list)
 
         # calculating noise levels at receiver in grid list
-        for grd_rcvr in grid_receiver_list:
-            rcvr_x_coord = grd_rcvr[0]
-            rcvr_y_coord = grd_rcvr[1]
-            sound_pressure = 0
+        # def _get_dBA(rcvr_x_coord, rcvr_y_coord):
+        #     sound_pressure = 0
+        #     for eqmt in self.parent.func_vars.equipment_list:
+        #         if eqmt.sound_ref_dist == 0:
+        #             sound_power = eqmt.sound_level
+        #         else:
+        #             q = eqmt.tested_q  # need to update this
+        #             r = eqmt.sound_ref_dist * 0.308
+        #             lp = eqmt.sound_level
+        #             b = q / (4 * math.pi * r**2)
+        #             sound_power = lp + abs(10 * math.log10(b))
+        #         sound_power += 10 * math.log10(eqmt.count)
+        #         distance = math.sqrt(
+        #             (rcvr_x_coord - eqmt.x_coord) ** 2
+        #             + (rcvr_y_coord - eqmt.y_coord) ** 2
+        #             + (grid_elevation - eqmt.z_coord) ** 2
+        #         )
+        #         try:
+        #             q = eqmt.installed_q
+        #             r = distance * 0.308
+        #             attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
+        #             used_barrier_name = None
+        #             barrier_IL = 0
+        #             if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False:
+        #                 for bar in self.parent.func_vars.barrier_list:
+        #                     barrier_info_list = (
+        #                         self.parent.pane_eqmt_info.ARI_barrier_IL_calc(
+        #                             eqmt.x_coord,
+        #                             eqmt.y_coord,
+        #                             eqmt.z_coord,
+        #                             bar.x0_coord,
+        #                             bar.y0_coord,
+        #                             bar.z0_coord,
+        #                             bar.x1_coord,
+        #                             bar.y1_coord,
+        #                             bar.z1_coord,
+        #                             rcvr_x_coord,
+        #                             rcvr_y_coord,
+        #                             grid_elevation,
+        #                         )
+        #                     )
+        #                     barrier_IL_test = (
+        #                         barrier_info_list[0] if barrier_info_list != 0 else 0
+        #                     )
+        #                     if barrier_IL_test > barrier_IL:
+        #                         barrier_IL = barrier_IL_test
+        #                         used_barrier_name = str(bar.barrier_name + " - ari")
+
+        #             if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
+        #                 for bar in self.parent.func_vars.barrier_list:
+        #                     if None not in [
+        #                         eqmt.hz63,
+        #                         eqmt.hz125,
+        #                         eqmt.hz250,
+        #                         eqmt.hz500,
+        #                         eqmt.hz1000,
+        #                         eqmt.hz2000,
+        #                         eqmt.hz4000,
+        #                         eqmt.hz8000,
+        #                     ]:
+        #                         barrier_info_list = self.parent.pane_eqmt_info.OB_fresnel_barrier_IL_calc(
+        #                             eqmt.x_coord,
+        #                             eqmt.y_coord,
+        #                             eqmt.z_coord,
+        #                             eqmt.hz63,
+        #                             eqmt.hz125,
+        #                             eqmt.hz250,
+        #                             eqmt.hz500,
+        #                             eqmt.hz1000,
+        #                             eqmt.hz2000,
+        #                             eqmt.hz4000,
+        #                             eqmt.hz8000,
+        #                             eqmt.sound_level,
+        #                             bar.x0_coord,
+        #                             bar.y0_coord,
+        #                             bar.z0_coord,
+        #                             bar.x1_coord,
+        #                             bar.y1_coord,
+        #                             bar.z1_coord,
+        #                             rcvr_x_coord,
+        #                             rcvr_y_coord,
+        #                             grid_elevation,
+        #                         )
+        #                         barrier_IL_test = (
+        #                             barrier_info_list[0]
+        #                             if barrier_info_list != 0
+        #                             else 0
+        #                         )
+        #                         barriermethod = " - OB_fresnel"
+        #                     else:
+        #                         barrier_info_list = (
+        #                             self.parent.pane_eqmt_info.ARI_barrier_IL_calc(
+        #                                 eqmt.x_coord,
+        #                                 eqmt.y_coord,
+        #                                 eqmt.z_coord,
+        #                                 bar.x0_coord,
+        #                                 bar.y0_coord,
+        #                                 bar.z0_coord,
+        #                                 bar.x1_coord,
+        #                                 bar.y1_coord,
+        #                                 bar.z1_coord,
+        #                                 rcvr_x_coord,
+        #                                 rcvr_y_coord,
+        #                                 grid_elevation,
+        #                             )
+        #                         )
+        #                         barrier_IL_test = (
+        #                             barrier_info_list[0]
+        #                             if barrier_info_list != 0
+        #                             else 0
+        #                         )
+        #                         barriermethod = " - ari"
+        #                     if barrier_IL_test > barrier_IL:
+        #                         barrier_IL = barrier_IL_test
+        #                         used_barrier_name = str(
+        #                             bar.barrier_name + barriermethod
+        #                         )
+
+        #             spl = max(0, sound_power - eqmt.insertion_loss - attenuation - barrier_IL)
+        #         except ValueError:
+        #             # print("MATH DOMAIN ERROR OCCURED")
+        #             spl = 1000
+        #         sound_pressure += 10 ** (spl / 10)
+        #     return 10 * math.log10(sound_pressure)
+
+        def _get_OB_Metric(rcvr_x_coord, rcvr_y_coord):
+            sound_pressure_hz = [ 0 ] * len(OCTAVE_BAND_HZ)
             for eqmt in self.parent.func_vars.equipment_list:
+                eqmt_hz = [
+                        eqmt.hz63,
+                        eqmt.hz125,
+                        eqmt.hz250,
+                        eqmt.hz500,
+                        eqmt.hz1000,
+                        eqmt.hz2000,
+                        eqmt.hz4000,
+                        eqmt.hz8000,
+                    ]
+                # print(eqmt.eqmt_tag, eqmt_hz)
+                if None in eqmt_hz:
+                    raise ValueError("NC CALCS NOT FUNCTIONAL W/O OCTAVE BAND DATA")
+
                 if eqmt.sound_ref_dist == 0:
-                    sound_power = eqmt.sound_level
+                    sound_power_hz = eqmt_hz
                 else:
                     q = eqmt.tested_q  # need to update this
                     r = eqmt.sound_ref_dist * 0.308
-                    lp = eqmt.sound_level
+                    lp_hz = eqmt_hz
                     b = q / (4 * math.pi * r**2)
-                    sound_power = lp + abs(10 * math.log10(b))
-                sound_power += 10 * math.log10(eqmt.count)
+                    sound_power_hz = [ lp + abs(10 * math.log10(b)) for lp in lp_hz ]
+                sound_power_hz = [ lw + 10 * math.log10(eqmt.count) for lw in sound_power_hz ]
                 distance = math.sqrt(
                     (rcvr_x_coord - eqmt.x_coord) ** 2
                     + (rcvr_y_coord - eqmt.y_coord) ** 2
                     + (grid_elevation - eqmt.z_coord) ** 2
                 )
+
                 try:
                     q = eqmt.installed_q
                     r = distance * 0.308
-                    attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
-                    used_barrier_name = None
-                    barrier_IL = 0
-                    if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False:
-                        for bar in self.parent.func_vars.barrier_list:
-                            barrier_info_list = (
-                                self.parent.pane_eqmt_info.ARI_barrier_IL_calc(
-                                    eqmt.x_coord,
-                                    eqmt.y_coord,
-                                    eqmt.z_coord,
-                                    bar.x0_coord,
-                                    bar.y0_coord,
-                                    bar.z0_coord,
-                                    bar.x1_coord,
-                                    bar.y1_coord,
-                                    bar.z1_coord,
-                                    rcvr_x_coord,
-                                    rcvr_y_coord,
-                                    grid_elevation,
-                                )
-                            )
-                            barrier_IL_test = (
-                                barrier_info_list[0] if barrier_info_list != 0 else 0
-                            )
-                            if barrier_IL_test > barrier_IL:
-                                barrier_IL = barrier_IL_test
-                                used_barrier_name = str(bar.barrier_name + " - ari")
+                    distance_attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
 
-                    if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
-                        for bar in self.parent.func_vars.barrier_list:
-                            if None not in [
-                                eqmt.hz63,
-                                eqmt.hz125,
-                                eqmt.hz250,
-                                eqmt.hz500,
-                                eqmt.hz1000,
-                                eqmt.hz2000,
-                                eqmt.hz4000,
-                                eqmt.hz8000,
-                            ]:
-                                barrier_info_list = self.parent.pane_eqmt_info.OB_fresnel_barrier_IL_calc(
-                                    eqmt.x_coord,
-                                    eqmt.y_coord,
-                                    eqmt.z_coord,
-                                    eqmt.hz63,
-                                    eqmt.hz125,
-                                    eqmt.hz250,
-                                    eqmt.hz500,
-                                    eqmt.hz1000,
-                                    eqmt.hz2000,
-                                    eqmt.hz4000,
-                                    eqmt.hz8000,
-                                    eqmt.sound_level,
-                                    bar.x0_coord,
-                                    bar.y0_coord,
-                                    bar.z0_coord,
-                                    bar.x1_coord,
-                                    bar.y1_coord,
-                                    bar.z1_coord,
-                                    rcvr_x_coord,
-                                    rcvr_y_coord,
-                                    grid_elevation,
-                                )
-                                barrier_IL_test = (
-                                    barrier_info_list[0]
-                                    if barrier_info_list != 0
-                                    else 0
-                                )
-                                barriermethod = " - OB_fresnel"
-                            else:
-                                barrier_info_list = (
-                                    self.parent.pane_eqmt_info.ARI_barrier_IL_calc(
-                                        eqmt.x_coord,
-                                        eqmt.y_coord,
-                                        eqmt.z_coord,
-                                        bar.x0_coord,
-                                        bar.y0_coord,
-                                        bar.z0_coord,
-                                        bar.x1_coord,
-                                        bar.y1_coord,
-                                        bar.z1_coord,
-                                        rcvr_x_coord,
-                                        rcvr_y_coord,
-                                        grid_elevation,
-                                    )
-                                )
-                                barrier_IL_test = (
-                                    barrier_info_list[0]
-                                    if barrier_info_list != 0
-                                    else 0
-                                )
-                                barriermethod = " - ari"
-                            if barrier_IL_test > barrier_IL:
-                                barrier_IL = barrier_IL_test
-                                used_barrier_name = str(
-                                    bar.barrier_name + barriermethod
-                                )
+                    # NO BARRIER
+                    assembly = self.parent.func_vars.selected_roof_assembly
+                    tl_hz = self.parent.func_vars.roof_assembly_dict[assembly]
+                    spl_hz = [
+                        lw - tl - eqmt.insertion_loss - distance_attenuation for (lw, tl) in zip(sound_power_hz, tl_hz)
+                        ]
+                    # print(eqmt.eqmt_tag, "spl_hz", spl_hz)
+                except (ValueError, ZeroDivisionError):
+                    # grid point sits on (or ~0 ft from) this source: mark the
+                    # cell off-scale instead of aborting the whole grid
+                    spl_hz = [1000] * len(OCTAVE_BAND_HZ)
 
-                    spl = sound_power - eqmt.insertion_loss - attenuation - barrier_IL
-                except ValueError:
-                    # print("MATH DOMAIN ERROR OCCURED")
-                    spl = 1000
-                sound_pressure += 10 ** (spl / 10)
-            grd_rcvr[2] = str(round(10 * math.log10(sound_pressure), 1))
+                for i in range(len(OCTAVE_BAND_HZ)):
+                    sound_pressure_hz[i] += 10 ** (spl_hz[i] / 10)
+                # print(eqmt.eqmt_tag, "sound_pressure_hz", sound_pressure_hz)
 
-        colorscale = [x for x in range(35, 95, 10)]
-        colorlist = [
-            "black",
-            "blue",
-            "purple",
-            "cyan3",
-            "green3",
-            "yellow3",
-            "DarkOrange1",
-            "OrangeRed2",
-            "maroon2",
-        ]
-        for grid_rcvr in grid_receiver_list:
-            x = grid_rcvr[0] / self.parent.func_vars.master_scale
-            y = grid_rcvr[1] / self.parent.func_vars.master_scale
-            level = grid_rcvr[2]
-            textcolor = "black"
-            for colorrange, color in zip(colorscale, colorlist):
-                consider_level = int(round(float(level), 0))
-                print("colorrange", colorrange)
-                print("considerlevel", consider_level)
-                if consider_level >= colorrange:
-                    textcolor = color
+            spl_total_hz = [ 10 * math.log10(pressure) for pressure in sound_pressure_hz ]
+            # print(spl_total_hz)
+            if self.combobox_grid_metric.get() == "NC":
+                return NCLevel(spl_total_hz)
+            elif self.combobox_grid_metric.get() == "dBA":
+                aweight_hz = [-26.2, -16.1, -8.6, -3.2, -0, 1.2, 1, -1.1]
+                spl_total_hz = [ max(0,spl + weight) for (spl, weight) in zip(spl_total_hz, aweight_hz) ]
+                dBA = acoustics.decibel.dbsum(spl_total_hz)
+                return dBA
+            elif self.combobox_grid_metric.get() == "RC":
+                return RCLevel(spl_total_hz)
+            else:
+                raise ValueError("No metric selected")
 
-            self.parent.editor.canvas.create_text(
-                (x, y),
-                tag="grid_level",
-                text=str(consider_level),
-                font=DRAWING_FONT,
-                fill=textcolor,
-            )
+        for grd_rcvr in grid_receiver_list:
+            rcvr_x_coord = grd_rcvr[0]
+            rcvr_y_coord = grd_rcvr[1]
+            metric_val = _get_OB_Metric(rcvr_x_coord, rcvr_y_coord)
+            if self.combobox_grid_metric.get() == "RC":
+                grd_rcvr[2] = str(metric_val[0])
+                grd_rcvr[3] = str(metric_val[1])
+            else:
+                grd_rcvr[2] = str(metric_val)
+
+            # if self.combobox_grid_metric.get() == "NC":
+            #     grd_rcvr[2] = str( _get_NC(rcvr_x_coord, rcvr_y_coord) )
+            # elif self.combobox_grid_metric.get() == "dBA":
+            #     grd_rcvr[2] = str(round(_get_dBA(rcvr_x_coord, rcvr_y_coord), 1 ) )
+            # else:
+            #     print(self.combobox_grid_metric.get())
+            #     raise ValueError("No metric selected")
+
+
+        # colorscale = [x for x in range(25, 65, 5)]
+        # colorlist = [
+        #     "green3",
+        #     "blue",
+        #     "yellow3",
+        #     "DarkOrange1",
+        #     "OrangeRed2",
+        #     "maroon2",
+        #     "purple",
+        #     "cyan3",
+        # ]
+        self.parent.func_vars.grid_receiver_coords = grid_receiver_list.copy()
+        self.parent.editor.full_redraw()
+        # for grid_rcvr in grid_receiver_list:
+        #     x = self.parent.editor.world_to_px(grid_rcvr[0])
+        #     y = self.parent.editor.world_to_px(grid_rcvr[1])
+        #     level = grid_rcvr[2]
+        #     textcolor = "black"
+        #     consider_level = int(round(float(level), 0))
+        #     for colorrange, color in zip(colorscale, colorlist):
+        #         if consider_level >= colorrange:
+        #             textcolor = color
+
+        #     # gr_id = ",".join(grid_rcvr)
+        #     gr_id = self.parent.editor.canvas.create_text(
+        #         (x, y),
+        #         # tag=gr_id,
+        #         text=str(consider_level),
+        #         font=GRID_FONT,
+        #         fill=textcolor,
+        #     )
+        #     self.parent.func_vars.grid_receivers_on_canvas.append(gr_id)
 
     def set_scale(self):
         self.parent.editor.canvas.bind(
