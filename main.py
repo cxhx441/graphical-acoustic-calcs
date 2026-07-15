@@ -20,8 +20,10 @@ SHEET_NAME = "Input LwA_XYZ"
 XL_TEMP_FILEPATH = "_temp.xlsm"
 XL_FILEPATH_SAVE = XL_FILEPATH[0:-5] + " - exported.xlsm"
 DRAWING_FONT = "Helvetica 12 bold"
-DEMO_GRID_FONT = "Helvetica 24 bold"
-GRID_FONT = "Helvetica 24 bold"
+GRID_FONT = "Helvetica 16 bold"
+GRID_DEFAULT_ELEV_SPACE = "0,25"
+GRID_DEFAULT_METRIC = "NC"
+GRID_DEFAULT_SIZE = (100, 100)
 BAR_IL_FONT = "Helvetica 14"
 
 # setting columns
@@ -1477,7 +1479,7 @@ class Pane_Toolbox(tk.Frame):
             values=["NC", "dBA", "RC"],
             state="readonly"
         )
-        self.combobox_grid_metric.set("NC")
+        self.combobox_grid_metric.set(GRID_DEFAULT_METRIC)
         self.combobox_roof_assembly = tkinter.ttk.Combobox(
             self,
             values=[x for x in self.parent.func_vars.roof_assembly_dict.keys()],
@@ -1584,7 +1586,7 @@ class Pane_Toolbox(tk.Frame):
                 x_start,
                 y_start + height,
                 text=txt,
-                font=DEMO_GRID_FONT,
+                font=GRID_FONT,
                 fill=txt_color
             )
             height += offset * 2
@@ -1755,8 +1757,11 @@ class Pane_Toolbox(tk.Frame):
         )
 
         # DEFAULT GRID
-        w = self.parent.editor.imageWidth * self.parent.editor.zoom_factor
-        h = self.parent.editor.imageHeight * self.parent.editor.zoom_factor
+        if GRID_DEFAULT_SIZE is NONE:
+            w = self.parent.editor.imageWidth * self.parent.editor.zoom_factor
+            h = self.parent.editor.imageHeight * self.parent.editor.zoom_factor
+        else:
+            w, h = GRID_DEFAULT_SIZE
         self.parent.func_vars.grid_outline_coords = [
             self.parent.editor.px_to_world(0),
             self.parent.editor.px_to_world(0),
@@ -1775,7 +1780,7 @@ class Pane_Toolbox(tk.Frame):
 
         self.parent.pane_eqmt_info.status_label.configure(text="Status: Drawing Grid-- input elevation, spacing(ft)")
         self.parent.pane_eqmt_info.entryBox1.delete(0, "end")
-        self.parent.pane_eqmt_info.entryBox1.insert(0, "0, 5")
+        self.parent.pane_eqmt_info.entryBox1.insert(0, GRID_DEFAULT_ELEV_SPACE)
 
         self.parent.pane_eqmt_info.entryBox1.focus()
 
