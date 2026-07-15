@@ -125,6 +125,12 @@ def ft_to_meters(d):
 
 OCTAVE_BAND_HZ = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
 
+def get_dBA_from_63to8k_OB(spl_63to8k_OB):
+    aweight_hz = [-26.2, -16.1, -8.6, -3.2, -0, 1.2, 1, -1.1]
+    spl_aweighted = [ spl + weight for (spl, weight) in zip(spl_63to8k_OB, aweight_hz) ]
+    dBA = acoustics.decibel.dbsum(spl_aweighted)
+    return dBA
+
 def RCLevel(levelsFrom63to8k_OB):
     """ RC should take 16Hz to 4kHz but I'm working with what I have. """
     ob = levelsFrom63to8k_OB
@@ -541,8 +547,10 @@ class FuncVars(object):
         self.quickdraw_bool = tk.IntVar()
         self.quickdraw_bool.set(True)
         self.e_to_r_shapes_bool = tk.BooleanVar()
-        self.grid_uses_nc_bool = tk.BooleanVar()
-        self.grid_uses_nc_bool.set(True)
+        # self.grid_uses_nc_bool = tk.BooleanVar()
+        # self.grid_uses_nc_bool.set(True)
+        self.grid_uses_barriers_bool = tk.BooleanVar()
+        self.grid_uses_barriers_bool.set(False)
         self.grid_color_only_bool = tk.BooleanVar()
         self.grid_color_only_bool.set(False)
         self.draw_grid_legend_bool = tk.BooleanVar()
@@ -1500,6 +1508,15 @@ class Pane_Toolbox(tk.Frame):
             command=self.draw_grid_legend,
             font=(None, 15),
         )
+        self.checkbox_grid_uses_barriers = tk.Checkbutton(
+            self,
+            text="Grid Uses Barriers (any, non-specific)",
+            variable=self.parent.func_vars.grid_uses_barriers_bool,
+            onvalue=True,
+            offvalue=False,
+            command=self.update_grid,
+            font=(None, 15),
+        )
         self.checkbox_grid_color_only = tk.Checkbutton(
             self,
             text="Grid w/ Colors Only",
@@ -1538,6 +1555,7 @@ class Pane_Toolbox(tk.Frame):
         self.combobox_roof_assembly.grid(row=7, column=1, sticky=tk.N + tk.W)
         self.checkbox_grid_legend.grid(row=8, column=1, sticky=tk.N + tk.W)
         self.checkbox_grid_color_only.grid(row=9, column=1, sticky=tk.N + tk.W)
+        self.checkbox_grid_uses_barriers.grid(row=10, column=1, sticky=tk.N + tk.W)
         self.button_draw_grid.grid(row=0, column=2, sticky=tk.N + tk.W)
         self.button_update_grid.grid(row=1, column=2, sticky=tk.N + tk.W)
         self.button_export_bar_file.grid(row=2, column=2, sticky=tk.N + tk.W)
@@ -1794,9 +1812,7 @@ class Pane_Toolbox(tk.Frame):
         grid_elevation = self.parent.func_vars.grid_elevation
         spacing = self.parent.func_vars.grid_spacing
 
-        grid_rect_coords = self.parent.editor.canvas.coords(
-            self.parent.editor.grid_rect
-        )
+        grid_rect_coords = self.parent.editor.canvas.coords( self.parent.editor.grid_rect)
         start_x_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[0])
         start_y_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[1])
         end_x_coord_ft = self.parent.editor.px_to_world(grid_rect_coords[2])
@@ -1811,133 +1827,6 @@ class Pane_Toolbox(tk.Frame):
                 cur_x_coord_ft += spacing
             cur_y_coord_ft += spacing
             cur_x_coord_ft = start_x_coord_ft
-        # print(grid_receiver_list)
-
-        # calculating noise levels at receiver in grid list
-        # def _get_dBA(rcvr_x_coord, rcvr_y_coord):
-        #     sound_pressure = 0
-        #     for eqmt in self.parent.func_vars.equipment_list:
-        #         if eqmt.sound_ref_dist == 0:
-        #             sound_power = eqmt.sound_level
-        #         else:
-        #             q = eqmt.tested_q  # need to update this
-        #            r = ft_to_meters(eqmt.sound_ref_dist)
-        #             lp = eqmt.sound_level
-        #             b = q / (4 * math.pi * r**2)
-        #             sound_power = lp + abs(10 * math.log10(b))
-        #         sound_power += 10 * math.log10(eqmt.count)
-        #         distance = math.sqrt(
-        #             (rcvr_x_coord - eqmt.x_coord) ** 2
-        #             + (rcvr_y_coord - eqmt.y_coord) ** 2
-        #             + (grid_elevation - eqmt.z_coord) ** 2
-        #         )
-        #         try:
-        #             q = eqmt.installed_q
-        #             r = ft_to_meters(distance)
-        #             attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
-        #             used_barrier_name = None
-        #             barrier_IL = 0
-        #             if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == False:
-        #                 for bar in self.parent.func_vars.barrier_list:
-        #                     barrier_info_list = (
-        #                         self.parent.pane_eqmt_info.ARI_barrier_IL_calc(
-        #                             eqmt.x_coord,
-        #                             eqmt.y_coord,
-        #                             eqmt.z_coord,
-        #                             bar.x0_coord,
-        #                             bar.y0_coord,
-        #                             bar.z0_coord,
-        #                             bar.x1_coord,
-        #                             bar.y1_coord,
-        #                             bar.z1_coord,
-        #                             rcvr_x_coord,
-        #                             rcvr_y_coord,
-        #                             grid_elevation,
-        #                         )
-        #                     )
-        #                     barrier_IL_test = (
-        #                         barrier_info_list[0] if barrier_info_list != 0 else 0
-        #                     )
-        #                     if barrier_IL_test > barrier_IL:
-        #                         barrier_IL = barrier_IL_test
-        #                         used_barrier_name = str(bar.barrier_name + " - ari")
-
-        #             if TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True:
-        #                 for bar in self.parent.func_vars.barrier_list:
-        #                     if None not in [
-        #                         eqmt.hz63,
-        #                         eqmt.hz125,
-        #                         eqmt.hz250,
-        #                         eqmt.hz500,
-        #                         eqmt.hz1000,
-        #                         eqmt.hz2000,
-        #                         eqmt.hz4000,
-        #                         eqmt.hz8000,
-        #                     ]:
-        #                         barrier_info_list = self.parent.pane_eqmt_info.OB_fresnel_barrier_IL_calc(
-        #                             eqmt.x_coord,
-        #                             eqmt.y_coord,
-        #                             eqmt.z_coord,
-        #                             eqmt.hz63,
-        #                             eqmt.hz125,
-        #                             eqmt.hz250,
-        #                             eqmt.hz500,
-        #                             eqmt.hz1000,
-        #                             eqmt.hz2000,
-        #                             eqmt.hz4000,
-        #                             eqmt.hz8000,
-        #                             eqmt.sound_level,
-        #                             bar.x0_coord,
-        #                             bar.y0_coord,
-        #                             bar.z0_coord,
-        #                             bar.x1_coord,
-        #                             bar.y1_coord,
-        #                             bar.z1_coord,
-        #                             rcvr_x_coord,
-        #                             rcvr_y_coord,
-        #                             grid_elevation,
-        #                         )
-        #                         barrier_IL_test = (
-        #                             barrier_info_list[0]
-        #                             if barrier_info_list != 0
-        #                             else 0
-        #                         )
-        #                         barriermethod = " - OB_fresnel"
-        #                     else:
-        #                         barrier_info_list = (
-        #                             self.parent.pane_eqmt_info.ARI_barrier_IL_calc(
-        #                                 eqmt.x_coord,
-        #                                 eqmt.y_coord,
-        #                                 eqmt.z_coord,
-        #                                 bar.x0_coord,
-        #                                 bar.y0_coord,
-        #                                 bar.z0_coord,
-        #                                 bar.x1_coord,
-        #                                 bar.y1_coord,
-        #                                 bar.z1_coord,
-        #                                 rcvr_x_coord,
-        #                                 rcvr_y_coord,
-        #                                 grid_elevation,
-        #                             )
-        #                         )
-        #                         barrier_IL_test = (
-        #                             barrier_info_list[0]
-        #                             if barrier_info_list != 0
-        #                             else 0
-        #                         )
-        #                         barriermethod = " - ari"
-        #                     if barrier_IL_test > barrier_IL:
-        #                         barrier_IL = barrier_IL_test
-        #                         used_barrier_name = str(
-        #                             bar.barrier_name + barriermethod
-        #                         )
-
-        #             spl = max(0, sound_power - eqmt.insertion_loss - attenuation - barrier_IL)
-        #         except ValueError:
-        #             # print("MATH DOMAIN ERROR OCCURED")
-        #             spl = 1000
-        #         sound_pressure += 10 ** (spl / 10)
-        #     return 10 * math.log10(sound_pressure)
 
         def _get_OB_Metric(rcvr_x_coord, rcvr_y_coord):
             sound_pressure_hz = [ 0 ] * len(OCTAVE_BAND_HZ)
@@ -1952,7 +1841,6 @@ class Pane_Toolbox(tk.Frame):
                         eqmt.hz4000,
                         eqmt.hz8000,
                     ]
-                # print(eqmt.eqmt_tag, eqmt_hz)
                 if None in eqmt_hz:
                     raise ValueError("NC CALCS NOT FUNCTIONAL W/O OCTAVE BAND DATA")
 
@@ -1982,24 +1870,41 @@ class Pane_Toolbox(tk.Frame):
                     spl_hz = [
                         lw - tl - eqmt.insertion_loss - distance_attenuation for (lw, tl) in zip(sound_power_hz, tl_hz)
                         ]
-                    # print(eqmt.eqmt_tag, "spl_hz", spl_hz)
                 except (ValueError, ZeroDivisionError):
                     # grid point sits on (or ~0 ft from) this source: mark the
                     # cell off-scale instead of aborting the whole grid
                     spl_hz = [1000] * len(OCTAVE_BAND_HZ)
 
+
+                # find best barrier for each eqmt->grid_receiver
+                cur_best_dba = get_dBA_from_63to8k_OB(spl_hz)
+                cur_best_ob = spl_hz
+                if self.parent.func_vars.grid_uses_barriers_bool.get() is True:
+                    for bar in self.parent.func_vars.barrier_list:
+                        bar_il_hz = self.parent.pane_eqmt_info.grid_OB_fresnel_barrier_IL_calc(eqmt, bar, rcvr_x_coord, rcvr_y_coord, grid_elevation)
+                        if bar_il_hz is None:
+                            continue
+                        ob_after_bar_il = [ x - y for x, y in zip(spl_hz, bar_il_hz) ]
+                        dba_after_bar_il = get_dBA_from_63to8k_OB(ob_after_bar_il)
+                        if dba_after_bar_il < cur_best_dba:
+                            cur_best_ob = ob_after_bar_il
+                            cur_best_dba = dba_after_bar_il
+                spl_hz = cur_best_ob
+
                 for i in range(len(OCTAVE_BAND_HZ)):
                     sound_pressure_hz[i] += 10 ** (spl_hz[i] / 10)
-                # print(eqmt.eqmt_tag, "sound_pressure_hz", sound_pressure_hz)
 
             spl_total_hz = [ 10 * math.log10(pressure) for pressure in sound_pressure_hz ]
-            # print(spl_total_hz)
+
+
+
             if self.combobox_grid_metric.get() == "NC":
                 return NCLevel(spl_total_hz)
             elif self.combobox_grid_metric.get() == "dBA":
-                aweight_hz = [-26.2, -16.1, -8.6, -3.2, -0, 1.2, 1, -1.1]
-                spl_total_hz = [ max(0,spl + weight) for (spl, weight) in zip(spl_total_hz, aweight_hz) ]
-                dBA = acoustics.decibel.dbsum(spl_total_hz)
+                # aweight_hz = [-26.2, -16.1, -8.6, -3.2, -0, 1.2, 1, -1.1]
+                # spl_total_hz = [ max(0,spl + weight) for (spl, weight) in zip(spl_total_hz, aweight_hz) ]
+                # dBA = acoustics.decibel.dbsum(spl_total_hz)
+                dBA = get_dBA_from_63to8k_OB(spl_total_hz)
                 return dBA
             elif self.combobox_grid_metric.get() == "RC":
                 return RCLevel(spl_total_hz)
@@ -2943,6 +2848,114 @@ class Pane_Eqmt_Info(tk.Frame):
             path_length_difference,
             "OB-Fresnel",
         ]
+    def grid_OB_fresnel_barrier_IL_calc( self, eqmt, bar, rcvr_x_coord, rcvr_y_coord, rcvr_z_coord):
+        eqmt_x = eqmt.x_coord
+        eqmt_y = eqmt.y_coord
+        eqmt_z = eqmt.z_coord
+        bar_x0 = bar.x0_coord
+        bar_y0 = bar.y0_coord
+        bar_z0 = bar.z0_coord
+        bar_x1 = bar.x1_coord
+        bar_y1 = bar.y1_coord
+        bar_z1 = bar.z1_coord
+        rcvr_x = rcvr_x_coord
+        rcvr_y = rcvr_y_coord
+        rcvr_z = rcvr_z_coord
+
+        # fixing escape on error with same barrier coordinate
+        if bar_x0 == bar_x1:
+            bar_x0 += 0.0001
+        if bar_y0 == bar_y1:
+            bar_y0 += 0.0001
+        # ob_levels_list = [hz63, hz125, hz250, hz500, hz1000, hz2000, hz4000, hz8000]
+
+        # testing if line of sight is broken along horizontal plane
+        eqmt_point = utils.Point(eqmt_x, eqmt_y)
+        receiver_point = utils.Point(rcvr_x, rcvr_y)
+        bar_start_point = utils.Point(bar_x0, bar_y0)
+        bar_end_point = utils.Point(bar_x1, bar_y1)
+        if not utils.doIntersect( eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            return None
+
+        try:
+            m_source2receiver = (rcvr_y - eqmt_y) / (rcvr_x - eqmt_x)
+        except ZeroDivisionError:
+            return None
+
+        try:
+            m_bar_start2end = (bar_y0 - bar_y1) / (bar_x0 - bar_x1)
+        except ZeroDivisionError:
+            return None
+
+        b_source2receiver = eqmt_y - (eqmt_x * m_source2receiver)
+        b_bar_start2end = bar_y0 - (bar_x0 * m_bar_start2end)
+        intersection_x = (b_bar_start2end - b_source2receiver) / ( m_source2receiver - m_bar_start2end)
+        intersection_y = m_source2receiver * intersection_x + b_source2receiver
+
+        bar_min_z = min(bar_z0, bar_z1)
+        bar_height_difference = abs(bar_z0 - bar_z1)
+        bar_length = utils.distance_formula(x0=bar_x0, y0=bar_y0, x1=bar_x1, y1=bar_y1)
+        bar_slope = bar_height_difference / bar_length
+        if bar_z0 <= bar_z1:
+            bar_dist2barxpoint = utils.distance_formula( x0=intersection_x, y0=intersection_y, x1=bar_x0, y1=bar_y0)
+        else:
+            bar_dist2barxpoint = utils.distance_formula( x0=intersection_x, y0=intersection_y, x1=bar_x1, y1=bar_y1)
+
+        bar_height_to_use = bar_slope * bar_dist2barxpoint + bar_min_z
+
+        # testing if line of sight is broken vertically
+        if bar_height_to_use < eqmt_z and bar_height_to_use < rcvr_z:
+            return None
+
+        distance_source2receiver_horizontal = utils.distance_formula( x0=eqmt_x, y0=eqmt_y, x1=rcvr_x, y1=rcvr_y)
+        distance_source2bar_horizontal = utils.distance_formula( x0=eqmt_x, y0=eqmt_y, x1=intersection_x, y1=intersection_y)
+        distance_barrier2receiever_straight = ( distance_source2receiver_horizontal - distance_source2bar_horizontal)
+        distance_source2receiver_propogation = math.sqrt( distance_source2receiver_horizontal**2 + (rcvr_z - eqmt_z) ** 2)
+        distance_source2barrier_top = math.sqrt( (bar_height_to_use - eqmt_z) ** 2 + distance_source2bar_horizontal**2)
+        distance_receiver2barrier_top = math.sqrt( (bar_height_to_use - rcvr_z) ** 2 + distance_barrier2receiever_straight**2)
+        path_length_difference = (
+            distance_source2barrier_top
+            + distance_receiver2barrier_top
+            - distance_source2receiver_propogation
+        )
+
+        # testing if line of sight is broken along VERTICAL plane
+        eqmt_point = utils.Point(0, eqmt_z)
+        receiver_point = utils.Point(distance_source2receiver_horizontal, rcvr_z)
+        bar_start_point = utils.Point(distance_source2bar_horizontal, 0)
+        bar_end_point = utils.Point(distance_source2bar_horizontal, bar_height_to_use)
+        if not utils.doIntersect( eqmt_point, receiver_point, bar_start_point, bar_end_point):
+            return None
+
+        speed_of_sound = 1128
+        ob_bands_list = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
+        fresnel_num_list = [
+            (2 * path_length_difference) / (speed_of_sound / ob) for ob in ob_bands_list
+        ]
+
+        line_point_correction = 0  # assume no line/point source correction 0 for point, -5 for line
+        barrier_finite_infinite_correction = 1.0  # assume infinite barrier see Mehta for correction under finite barrier.
+        Kb_barrier_constant = 5  # assume Kb (barrier constant) for wall = 5, berm = 8
+        barrier_attenuate_limit = 20  # wall limit = 20 berm limit = 23
+
+        ob_barrier_attenuation_list = []
+        for N in fresnel_num_list:
+            n_d = math.sqrt(2 * math.pi * N)
+            if N == 0 or n_d == 0:
+                ob_barrier_attenuation_list.append(0)
+                continue
+
+            ob_barrier_attenuation = (
+                (20 * math.log10(n_d / math.tanh(n_d)))
+                + Kb_barrier_constant
+                + line_point_correction
+            ) ** barrier_finite_infinite_correction
+
+            if ob_barrier_attenuation > barrier_attenuate_limit:
+                ob_barrier_attenuation = barrier_attenuate_limit
+            ob_barrier_attenuation_list.append(ob_barrier_attenuation)
+
+        return ob_barrier_attenuation_list
 
     def spec_bar_check(self, b, e_idx, r_idx):
         bar_mat_cur_line = self.parent.func_vars.specific_bar_matrix[e_idx][r_idx]
@@ -3015,10 +3028,7 @@ class Pane_Eqmt_Info(tk.Frame):
                         used_barrier_name = None
                         used_barrier_obj = None
                         barrier_IL = 0
-                        if (
-                            TAKE_ARI_BARRIER == True
-                            and TAKE_OB_FRESNAL_BARRIER == False
-                        ):
+                        if ( TAKE_ARI_BARRIER is True and TAKE_OB_FRESNAL_BARRIER is False):
                             for bar in self.parent.func_vars.barrier_list:
                                 if (
                                     self.parent.func_vars.use_specific_bar_bool.get()
@@ -3079,9 +3089,7 @@ class Pane_Eqmt_Info(tk.Frame):
                                         else [0]
                                     )
 
-                        elif (
-                            TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True
-                        ):
+                        elif ( TAKE_ARI_BARRIER == True and TAKE_OB_FRESNAL_BARRIER == True):
                             for bar in self.parent.func_vars.barrier_list:
                                 if (
                                     self.parent.func_vars.use_specific_bar_bool.get()
