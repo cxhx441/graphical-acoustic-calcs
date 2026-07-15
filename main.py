@@ -120,6 +120,8 @@ BAR_Z1_COORD_COL = 31
 BAR_IL_COL_RANGE = range(73, 88)
 
 
+def ft_to_meters(d):
+    return d * (1.0/3.281)
 
 OCTAVE_BAND_HZ = [63, 125, 250, 500, 1000, 2000, 4000, 8000]
 
@@ -1819,7 +1821,7 @@ class Pane_Toolbox(tk.Frame):
         #             sound_power = eqmt.sound_level
         #         else:
         #             q = eqmt.tested_q  # need to update this
-        #             r = eqmt.sound_ref_dist * 0.308
+        #            r = ft_to_meters(eqmt.sound_ref_dist)
         #             lp = eqmt.sound_level
         #             b = q / (4 * math.pi * r**2)
         #             sound_power = lp + abs(10 * math.log10(b))
@@ -1831,7 +1833,7 @@ class Pane_Toolbox(tk.Frame):
         #         )
         #         try:
         #             q = eqmt.installed_q
-        #             r = distance * 0.308
+        #             r = ft_to_meters(distance)
         #             attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
         #             used_barrier_name = None
         #             barrier_IL = 0
@@ -1958,7 +1960,7 @@ class Pane_Toolbox(tk.Frame):
                     sound_power_hz = eqmt_hz
                 else:
                     q = eqmt.tested_q  # need to update this
-                    r = eqmt.sound_ref_dist * 0.308
+                    r = ft_to_meters(eqmt.sound_ref_dist)
                     lp_hz = eqmt_hz
                     b = q / (4 * math.pi * r**2)
                     sound_power_hz = [ lp + abs(10 * math.log10(b)) for lp in lp_hz ]
@@ -1971,7 +1973,7 @@ class Pane_Toolbox(tk.Frame):
 
                 try:
                     q = eqmt.installed_q
-                    r = distance * 0.308
+                    r = ft_to_meters(distance)
                     distance_attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
 
                     # NO BARRIER
@@ -2992,7 +2994,7 @@ class Pane_Eqmt_Info(tk.Frame):
                         sound_power = eqmt.sound_level + 10 * math.log10(eqmt.count)
                     else:
                         q = eqmt.tested_q  # need to update this
-                        r = eqmt.sound_ref_dist * 0.308
+                        r = ft_to_meters(eqmt.sound_ref_dist)
                         lp = eqmt.sound_level
                         b = q / (4 * math.pi * r**2)
                         sound_power = (
@@ -3008,7 +3010,7 @@ class Pane_Eqmt_Info(tk.Frame):
                             eqmt_index
                         ][rcvr_index]
                         q = eqmt.installed_q
-                        r = distance * 0.308
+                        r = ft_to_meters(distance)
                         attenuation = abs(10 * math.log10(q / (4 * math.pi * r**2)))
                         used_barrier_name = None
                         used_barrier_obj = None
