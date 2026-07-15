@@ -23,7 +23,7 @@ DRAWING_FONT = "Helvetica 12 bold"
 GRID_FONT = "Helvetica 16 bold"
 GRID_DEFAULT_ELEV_SPACE = "0,25"
 GRID_DEFAULT_METRIC = "NC"
-GRID_DEFAULT_SIZE = (100, 100)
+GRID_DEFAULT_SIZE = (1000, 1000)
 BAR_IL_FONT = "Helvetica 14"
 
 # setting columns
@@ -1757,7 +1757,7 @@ class Pane_Toolbox(tk.Frame):
         )
 
         # DEFAULT GRID
-        if GRID_DEFAULT_SIZE is NONE:
+        if GRID_DEFAULT_SIZE is None:
             w = self.parent.editor.imageWidth * self.parent.editor.zoom_factor
             h = self.parent.editor.imageHeight * self.parent.editor.zoom_factor
         else:
