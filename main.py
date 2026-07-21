@@ -24,6 +24,7 @@ GRID_FONT = "Helvetica 16 bold"
 GRID_DEFAULT_ELEV_SPACE = "0,25"
 GRID_DEFAULT_METRIC = "NC"
 GRID_DEFAULT_SIZE = (78.04, 28.85, 242, 269) # world coords
+GRID_COLOR_ONLY_PIXEL_FACTOR = 0.65
 BAR_IL_FONT = "Helvetica 14"
 
 # setting columns
@@ -891,6 +892,7 @@ class Editor(tk.Frame):
 
             if self.parent.func_vars.grid_color_only_bool.get() is True:
                 ofs = self.parent.func_vars.grid_spacing / 2.0
+                ofs *= min(1, GRID_COLOR_ONLY_PIXEL_FACTOR)
                 ofs = self.parent.editor.world_to_px(ofs)
                 gr_id = self.canvas.create_rectangle(
                     x-ofs, y-ofs, x+ofs, y+ofs, fill=textcolor, width=0)
