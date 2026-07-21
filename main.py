@@ -23,7 +23,7 @@ DRAWING_FONT = "Helvetica 12 bold"
 GRID_FONT = "Helvetica 16 bold"
 GRID_DEFAULT_ELEV_SPACE = "0,25"
 GRID_DEFAULT_METRIC = "NC"
-GRID_DEFAULT_SIZE = (1000, 1000)
+GRID_DEFAULT_SIZE = (78.04, 28.85, 242, 269) # world coords
 BAR_IL_FONT = "Helvetica 14"
 
 # setting columns
@@ -1778,21 +1778,17 @@ class Pane_Toolbox(tk.Frame):
 
         # DEFAULT GRID
         if GRID_DEFAULT_SIZE is None:
-            w = self.parent.editor.imageWidth * self.parent.editor.zoom_factor
-            h = self.parent.editor.imageHeight * self.parent.editor.zoom_factor
+            w0, h0 = 0, 0
+            w1 = self.parent.editor.imageWidth * self.parent.editor.zoom_factor
+            h1 = self.parent.editor.imageHeight * self.parent.editor.zoom_factor
         else:
-            w, h = GRID_DEFAULT_SIZE
-        self.parent.func_vars.grid_outline_coords = [
-            self.parent.editor.px_to_world(0),
-            self.parent.editor.px_to_world(0),
-            self.parent.editor.px_to_world(w),
-            self.parent.editor.px_to_world(h)
-            ]
+            w0, h0, w1, h1 = GRID_DEFAULT_SIZE
+        self.parent.func_vars.grid_outline_coords = [ w0, h0, w1, h1 ]
         self.parent.editor.grid_rect = self.parent.editor.canvas.create_rectangle(
-            0,
-            0,
-            w,
-            h,
+            self.parent.editor.world_to_pix(w0),
+            self.parent.editor.world_to_pix(h0),
+            self.parent.editor.world_to_pix(w1),
+            self.parent.editor.world_to_pix(h1),
             outline="green",
             width=5,
             tag="grid_rect",
